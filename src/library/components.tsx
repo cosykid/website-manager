@@ -1,4 +1,5 @@
 import type { ComponentType } from "react";
+import { Banner } from "./banner/Banner";
 import { CardGrid } from "./card-grid/CardGrid";
 import type { ComponentTypeName } from "./definitions";
 import { Section } from "./section/Section";
@@ -16,5 +17,6 @@ import { Section } from "./section/Section";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const components: Record<ComponentTypeName, ComponentType<any>> = {
   section: Section,
+  banner: Banner,
   "card-grid": CardGrid,
 };
