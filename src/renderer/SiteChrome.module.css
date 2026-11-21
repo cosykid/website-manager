@@ -1,0 +1,87 @@
+/* The header and footer every public page shares. Colours and type come from
+   the site's theme through the variables set in site.css. */
+
+.header {
+  border-bottom: 4px solid var(--theme-brand);
+}
+
+.headerInner,
+.footerInner {
+  max-width: 72rem;
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 4vw, 2rem);
+}
+
+.headerInner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: 2rem;
+  padding-block: 0.5rem;
+}
+
+.siteName {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  color: inherit;
+  font-family: var(--font-heading);
+  font-size: 1.75rem;
+  font-weight: var(--heading-weight);
+  letter-spacing: var(--heading-letter-spacing);
+  line-height: 1;
+  text-decoration: none;
+  text-transform: var(--heading-transform);
+}
+
+.navList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.navLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  color: inherit;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.navLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.3em;
+}
+
+/* The current page is marked by weight and an underline, not colour alone. */
+.navLink[aria-current="page"] {
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 0.16em;
+  text-underline-offset: 0.3em;
+}
+
+.footer {
+  margin-top: clamp(2rem, 6vw, 4rem);
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+}
+
+.footerInner {
+  padding-block: 1.5rem;
+}
+
+.footerInner p {
+  margin: 0;
+}
+
+.footerName {
+  color: var(--color-text);
+  font-weight: 600;
+}

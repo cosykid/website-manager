@@ -1,0 +1,29 @@
+.cardGrid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+/* As many columns as fit the space the grid is given, so it works at full
+   width and inside one half of a two-column section. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
+  gap: 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+.body {
+  display: grid;
+  gap: 0.25rem;
+  padding: 1rem 1.125rem 0.75rem;
+}

@@ -3,8 +3,16 @@ import { cache } from "react";
 import type { ComponentInstance, Page } from "@/page-model/types";
 import { pagesCollection, type PageRecord } from "./collections";
 
-function toPage({ _id, createdAt: _createdAt, ...rest }: PageRecord): Page {
-  return { id: _id.toString(), ...rest };
+function toPage(record: PageRecord): Page {
+  return {
+    id: record._id.toString(),
+    schemaVersion: record.schemaVersion,
+    siteId: record.siteId,
+    path: record.path,
+    title: record.title,
+    content: record.content,
+    updatedAt: record.updatedAt,
+  };
 }
 
 /** MongoDB's error when a write would break a unique index. */

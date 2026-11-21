@@ -1,0 +1,36 @@
+.section {
+  padding-block: clamp(2rem, 6vw, 4.5rem);
+  /* Lets the layout below respond to the section's own width, so a section
+     nested inside a column behaves like a narrow page. */
+  container-type: inline-size;
+}
+
+.inner {
+  display: grid;
+  gap: clamp(1.5rem, 4vw, 3rem);
+  max-width: 72rem;
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 4vw, 2rem);
+}
+
+@container (min-width: 44rem) {
+  .inner[data-layout="two-column"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
+/* A section inside a section sits within its parent's spacing. If it has a
+   background of its own it becomes a panel. */
+.section .section {
+  padding-block: 0;
+}
+
+.section .section > .inner {
+  padding-inline: 0;
+}
+
+.section .section[data-surface] {
+  padding: clamp(1rem, 3cqi, 2rem);
+  border-radius: var(--radius-card);
+}

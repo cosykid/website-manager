@@ -1,0 +1,156 @@
+/*
+ * Styles shared by every public site.
+ *
+ * Colours work in two layers:
+ *
+ * 1. Theme tokens (--theme-*) come from the site's document in MongoDB. The
+ *    layout sets them on <body> and they never change within a page.
+ * 2. Working colours (--color-*) are what components actually use. A surface
+ *    sets them for everything inside it.
+ *
+ * So a heading or button never needs to know where it has been placed. Put it
+ * in a brand-coloured Section and it reads the brand surface's colours; put
+ * it in a card and it reads the card's.
+ */
+
+/* Used only when no site matched the hostname, so the 404 is still readable. */
+body {
+  --theme-surface: #ffffff;
+  --theme-surface-alt: #f1f1f1;
+  --theme-text: #1a1a1a;
+  --theme-text-muted: #555555;
+  --theme-border: #cccccc;
+  --theme-brand: #1a1a1a;
+  --theme-on-brand: #ffffff;
+  --theme-accent: #1a1a1a;
+  --theme-on-accent: #ffffff;
+  --font-heading: system-ui, sans-serif;
+  --font-body: system-ui, sans-serif;
+  --heading-weight: 700;
+  --heading-transform: none;
+  --heading-letter-spacing: 0;
+  --radius-card: 8px;
+  --radius-button: 8px;
+}
+
+/* The page itself, and anything that resets to it, such as a card. */
+body,
+[data-surface="base"] {
+  --color-bg: var(--theme-surface);
+  --color-text: var(--theme-text);
+  --color-text-muted: var(--theme-text-muted);
+  --color-border: var(--theme-border);
+  --color-accent: var(--theme-accent);
+  --color-on-accent: var(--theme-on-accent);
+}
+
+/* A Section with the "Subtle" background. */
+[data-surface="alt"] {
+  --color-bg: var(--theme-surface-alt);
+  --color-text: var(--theme-text);
+  --color-text-muted: var(--theme-text-muted);
+  --color-border: var(--theme-border);
+  --color-accent: var(--theme-accent);
+  --color-on-accent: var(--theme-on-accent);
+}
+
+/* A Section with the "Brand" background. Text takes the theme's on-brand
+   colour and buttons swap to the reverse pairing, so both stay readable. */
+[data-surface="brand"] {
+  --color-bg: var(--theme-brand);
+  --color-text: var(--theme-on-brand);
+  --color-text-muted: var(--theme-on-brand);
+  --color-border: var(--theme-on-brand);
+  --color-accent: var(--theme-on-brand);
+  --color-on-accent: var(--theme-brand);
+}
+
+body,
+[data-surface] {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  /* Sizes below are in rem, so the whole site follows the reader's own
+     browser text size. */
+  font-size: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+}
+
+p {
+  margin: 0;
+}
+
+:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
+}
+
+/* Hidden on screen, still read out by screen readers. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Lets keyboard users jump past the navigation. Appears when focused. */
+.skip-link {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 1;
+  padding: 0.75rem 1rem;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-weight: 600;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+.not-found {
+  display: grid;
+  gap: 1rem;
+  justify-items: start;
+  max-width: 72rem;
+  margin-inline: auto;
+  padding: clamp(3rem, 10vw, 6rem) clamp(1rem, 4vw, 2rem);
+}
+
+.not-found h1 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: clamp(2.5rem, 7vw, 4.5rem);
+  font-weight: var(--heading-weight);
+  letter-spacing: var(--heading-letter-spacing);
+  line-height: 1;
+  text-transform: var(--heading-transform);
+}
+
+.not-found a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  color: inherit;
+  font-weight: 600;
+  text-underline-offset: 0.22em;
+}

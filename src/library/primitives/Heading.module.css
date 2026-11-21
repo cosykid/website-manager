@@ -1,0 +1,23 @@
+.heading {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: var(--heading-weight);
+  text-transform: var(--heading-transform);
+  letter-spacing: var(--heading-letter-spacing);
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+.heading[data-size="large"] {
+  font-size: clamp(2.5rem, 7vw, 4.5rem);
+  line-height: 1;
+}
+
+.heading[data-size="medium"] {
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+}
+
+.heading[data-size="small"] {
+  font-size: 1.3125rem;
+  line-height: 1.2;
+}
