@@ -1,0 +1,109 @@
+.editor {
+  max-width: 76rem;
+  margin-inline: auto;
+  padding: 0 clamp(1rem, 3vw, 2rem) 4rem;
+}
+
+.toolbar {
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+  margin-bottom: 1.25rem;
+  padding-block: 1.25rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+/* Stays in view while a long form scrolls, so "Save page" is always at hand.
+   Not on a short screen, such as a phone on its side, where it would cover
+   too much of the page. */
+@media (min-height: 40rem) {
+  .toolbar {
+    position: sticky;
+    top: 0;
+  }
+}
+
+.heading {
+  min-width: 0;
+}
+
+.toolbarActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.status {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+/* The status stays in the page while it is empty, so that screen readers
+   announce it when it changes. This cancels the gap it would leave. */
+.status:empty {
+  margin-right: -0.75rem;
+}
+
+.failure,
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 1.25rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+}
+
+.failure {
+  border: 1px solid var(--danger);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.failure svg {
+  flex: none;
+}
+
+.notice {
+  justify-content: space-between;
+  border: 1px solid var(--border-strong);
+  background: var(--raised);
+}
+
+.columns {
+  display: grid;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+/* Outline beside the form when there is room, above it when there isn't. */
+@media (min-width: 60rem) {
+  .columns {
+    grid-template-columns: minmax(19rem, 25rem) minmax(0, 1fr);
+  }
+}
+
+.side {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  min-width: 0;
+  padding: clamp(0.875rem, 4vw, 1.25rem);
+}
+
+/* The form's heading takes focus when a component is selected. It is not a
+   control, so it shows no focus ring. */
+.panel h2:focus {
+  outline: none;
+}

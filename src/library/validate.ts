@@ -65,6 +65,24 @@ function fillValue(field: Field, value: unknown): unknown {
   return value;
 }
 
+/** Runs fillGroup over the props of every instance on a page. */
+export function fillTree(
+  nodes: ComponentInstance[],
+  definitions: Record<string, ComponentDefinition>,
+): ComponentInstance[] {
+  return nodes.map((node) => {
+    const definition = definitions[node.type];
+    const filled: ComponentInstance = {
+      id: node.id,
+      type: node.type,
+      // An instance of a component that no longer exists is kept as it is.
+      props: definition ? fillGroup(definition.fields, node.props) : node.props,
+    };
+    if (node.children) filled.children = fillTree(node.children, definitions);
+    return filled;
+  });
+}
+
 /** Checks every field of a group, such as a whole component's props. */
 export function validateGroup(
   fields: Record<string, Field>,

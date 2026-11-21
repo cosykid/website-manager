@@ -1,0 +1,129 @@
+.fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.125rem;
+}
+
+/* A group of fields that belong together, such as an image or a link. */
+.group {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  min-width: 0;
+  margin: 0;
+  padding: clamp(0.75rem, 3vw, 1rem);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.groupLabel {
+  padding: 0 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.625rem;
+}
+
+/* A list reads like a team sheet: a position number, then a name. */
+.entries {
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  list-style: none;
+}
+
+.entry + .entry {
+  border-top: 1px solid var(--border);
+}
+
+.entryRow {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding-right: 0.375rem;
+}
+
+.entryToggle {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0.375rem 0.25rem 0.375rem 0.75rem;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.entryToggle:hover .entryTitle {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.entryNumber {
+  flex: none;
+  min-width: 1.25rem;
+  color: var(--text-muted);
+  font-family: var(--font-data);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A long name wraps onto more lines; it is never cut short. */
+.entryTitle {
+  min-width: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.entryTitle[data-untitled] {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.problems {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--danger);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.chevron {
+  display: inline-flex;
+  flex: none;
+  margin-left: auto;
+  color: var(--text-muted);
+}
+
+.chevron[data-open] {
+  transform: rotate(180deg);
+}
+
+.entryActions {
+  display: flex;
+  flex: none;
+}
+
+.entryBody {
+  padding: 0.5rem 0.875rem 1.125rem;
+  border-top: 1px dashed var(--border);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .chevron {
+    transition: transform 120ms;
+  }
+}

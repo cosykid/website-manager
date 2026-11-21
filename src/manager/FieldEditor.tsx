@@ -1,0 +1,437 @@
+"use client";
+
+import { useState } from "react";
+import type {
+  Field,
+  GroupField,
+  ListField,
+  SelectField,
+  TextField,
+  UrlField,
+} from "@/library/types";
+import { emptyValue, fillGroup, type Issue } from "@/library/validate";
+import { isPlainObject } from "@/page-model/shape";
+import styles from "./FieldEditor.module.css";
+import { Icon } from "./Icon";
+
+/**
+ * The generated form.
+ *
+ * Every component's editing form comes from here: one input per field in the
+ * component's definition, chosen by the field's `kind`. Groups and lists call
+ * back into the same code for the fields inside them, which is how a list of
+ * cards, each with an image and an optional link, needs no code of its own.
+ *
+ * A new kind of field needs one more case in `FieldEditor` below.
+ */
+
+/**
+ * Reports a new value. `removed` names anything the change took away
+ * ("Card", "Link"), so the page editor can offer to undo it.
+ */
+type Change = (value: unknown, removed?: string) => void;
+
+/** What every input needs to know, passed down unchanged. */
+type Shared = {
+  /** Every problem on the component being edited. Each input shows its own. */
+  issues: Issue[];
+  /** Keeps input ids unique when two components share field names. */
+  idPrefix: string;
+};
+
+type FieldEditorProps<F extends Field = Field> = {
+  field: F;
+  value: unknown;
+  onChange: Change;
+  /** Where the value sits in the component's props, e.g. "cards.2.heading". */
+  path: string;
+  shared: Shared;
+};
+
+/** The inputs for a set of named fields: a whole component, or one group. */
+export function GroupFields({
+  fields,
+  value,
+  onChange,
+  path,
+  shared,
+}: {
+  fields: Record<string, Field>;
+  value: Record<string, unknown>;
+  onChange: Change;
+  path: string;
+  shared: Shared;
+}) {
+  return (
+    <div className={styles.fields}>
+      {Object.entries(fields).map(([name, field]) => (
+        <FieldEditor
+          key={name}
+          field={field}
+          value={value[name]}
+          path={path ? `${path}.${name}` : name}
+          shared={shared}
+          onChange={(next, removed) => {
+            const changed = { ...value };
+            // An optional group that has been removed leaves no key behind.
+            if (next === undefined) delete changed[name];
+            else changed[name] = next;
+            onChange(changed, removed);
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function FieldEditor(props: FieldEditorProps) {
+  const { field } = props;
+  switch (field.kind) {
+    case "text":
+    case "url":
+      return <TextInput {...props} field={field} />;
+    case "select":
+      return <SelectInput {...props} field={field} />;
+    case "group":
+      return <GroupEditor {...props} field={field} />;
+    case "list":
+      return <ListEditor {...props} field={field} />;
+  }
+}
+
+function TextInput({
+  field,
+  value,
+  onChange,
+  path,
+  shared,
+}: FieldEditorProps<TextField | UrlField>) {
+  const id = `${shared.idPrefix}-${path}`;
+  const error = shared.issues.find((issue) => issue.path === path)?.message;
+  const describedBy = [field.help && `${id}-help`, error && `${id}-error`]
+    .filter(Boolean)
+    .join(" ");
+
+  const inputProps = {
+    id,
+    className: "input",
+    value: typeof value === "string" ? value : "",
+    placeholder: field.placeholder,
+    "aria-invalid": error ? true : undefined,
+    "aria-describedby": describedBy || undefined,
+  };
+
+  return (
+    <div className="field">
+      <label className="label" htmlFor={id}>
+        {field.label}
+        {!field.required && <span className="optional"> (optional)</span>}
+      </label>
+
+      {field.kind === "text" && field.multiline ? (
+        <textarea
+          {...inputProps}
+          rows={4}
+          onChange={(event) => onChange(event.target.value)}
+        />
+      ) : (
+        <input
+          {...inputProps}
+          type="text"
+          // Addresses get the URL keyboard on phones and no autocorrect.
+          inputMode={field.kind === "url" ? "url" : undefined}
+          autoCapitalize={field.kind === "url" ? "none" : undefined}
+          spellCheck={field.kind === "url" ? false : undefined}
+          onChange={(event) => onChange(event.target.value)}
+        />
+      )}
+
+      {field.help && (
+        <p className="help" id={`${id}-help`}>
+          {field.help}
+        </p>
+      )}
+      {error && (
+        <p className="error" id={`${id}-error`}>
+          <Icon name="problem" />
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function SelectInput({
+  field,
+  value,
+  onChange,
+  path,
+  shared,
+}: FieldEditorProps<SelectField>) {
+  const id = `${shared.idPrefix}-${path}`;
+  const error = shared.issues.find((issue) => issue.path === path)?.message;
+  const describedBy = [field.help && `${id}-help`, error && `${id}-error`]
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    <div className="field">
+      <label className="label" htmlFor={id}>
+        {field.label}
+      </label>
+      <select
+        id={id}
+        className="input"
+        value={typeof value === "string" ? value : field.default}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy || undefined}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        {field.options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      {field.help && (
+        <p className="help" id={`${id}-help`}>
+          {field.help}
+        </p>
+      )}
+      {error && (
+        <p className="error" id={`${id}-error`}>
+          <Icon name="problem" />
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function GroupEditor({
+  field,
+  value,
+  onChange,
+  path,
+  shared,
+}: FieldEditorProps<GroupField>) {
+  const name = field.label.toLowerCase();
+
+  // An optional group that hasn't been added yet is a single button.
+  if (field.optional && value === undefined) {
+    return (
+      <div>
+        <button
+          type="button"
+          className="button"
+          onClick={() => onChange(fillGroup(field.fields, {}))}
+        >
+          <Icon name="add" />
+          Add {name}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <fieldset className={styles.group}>
+      <legend className={styles.groupLabel}>{field.label}</legend>
+      <GroupFields
+        fields={field.fields}
+        value={isPlainObject(value) ? value : {}}
+        onChange={onChange}
+        path={path}
+        shared={shared}
+      />
+      {field.optional && (
+        <div>
+          <button
+            type="button"
+            className="button"
+            data-variant="quiet"
+            onClick={() => onChange(undefined, field.label)}
+          >
+            Remove {name}
+          </button>
+        </div>
+      )}
+    </fieldset>
+  );
+}
+
+function ListEditor({
+  field,
+  value,
+  onChange,
+  path,
+  shared,
+}: FieldEditorProps<ListField>) {
+  const items = Array.isArray(value) ? value : [];
+  // Which entry's fields are showing. One at a time, so a long list stays
+  // short enough to scan and reorder.
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  function addEntry() {
+    const entry =
+      field.item.kind === "group"
+        ? fillGroup(field.item.fields, {})
+        : emptyValue(field.item);
+    onChange([...items, entry]);
+    setOpenIndex(items.length);
+  }
+
+  function removeEntry(index: number) {
+    onChange(
+      items.filter((_, itemIndex) => itemIndex !== index),
+      capitalise(field.itemLabel),
+    );
+    setOpenIndex(null);
+  }
+
+  function moveEntry(index: number, by: -1 | 1) {
+    const target = index + by;
+    const reordered = [...items];
+    [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+    onChange(reordered);
+    // Keep the open entry open as it moves.
+    if (openIndex === index) setOpenIndex(target);
+    else if (openIndex === target) setOpenIndex(index);
+  }
+
+  return (
+    <div className={styles.list}>
+      <p className="label" id={`${shared.idPrefix}-${path}-label`}>
+        {field.label}
+      </p>
+
+      {items.length === 0 ? (
+        <p className="help">
+          No {field.itemLabel}s yet. Add the first one below.
+        </p>
+      ) : (
+        <ol
+          className={styles.entries}
+          aria-labelledby={`${shared.idPrefix}-${path}-label`}
+        >
+          {items.map((item, index) => {
+            const entryPath = `${path}.${index}`;
+            const title = entryTitle(field, item);
+            const name = title || `${field.itemLabel} ${index + 1}`;
+            const isOpen = openIndex === index;
+            const problems = shared.issues.filter((issue) =>
+              issue.path.startsWith(`${entryPath}.`),
+            ).length;
+            const panelId = `${shared.idPrefix}-${entryPath}-panel`;
+
+            return (
+              <li key={index} className={styles.entry}>
+                <div className={styles.entryRow}>
+                  <button
+                    type="button"
+                    className={styles.entryToggle}
+                    aria-expanded={isOpen}
+                    aria-controls={isOpen ? panelId : undefined}
+                    onClick={() => setOpenIndex(isOpen ? null : index)}
+                  >
+                    {/* The spaces keep the parts apart when a screen reader
+                        reads the button out: "1 Tessa Whitlock". */}
+                    <span className={styles.entryNumber}>{index + 1}</span>{" "}
+                    <span className={styles.entryTitle} data-untitled={!title || undefined}>
+                      {title || `Untitled ${field.itemLabel}`}
+                    </span>{" "}
+                    {problems > 0 && (
+                      <span className={styles.problems}>
+                        <Icon name="problem" size={14} />
+                        {problems} {problems === 1 ? "problem" : "problems"}
+                      </span>
+                    )}
+                    <span className={styles.chevron} data-open={isOpen || undefined}>
+                      <Icon name="expand" />
+                    </span>
+                  </button>
+
+                  <div className={styles.entryActions}>
+                    <button
+                      type="button"
+                      className="icon-button"
+                      aria-label={`Move ${name} up`}
+                      disabled={index === 0}
+                      onClick={() => moveEntry(index, -1)}
+                    >
+                      <Icon name="up" />
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-button"
+                      aria-label={`Move ${name} down`}
+                      disabled={index === items.length - 1}
+                      onClick={() => moveEntry(index, 1)}
+                    >
+                      <Icon name="down" />
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-button"
+                      aria-label={`Remove ${name}`}
+                      onClick={() => removeEntry(index)}
+                    >
+                      <Icon name="remove" />
+                    </button>
+                  </div>
+                </div>
+
+                {isOpen && (
+                  <div className={styles.entryBody} id={panelId}>
+                    {field.item.kind === "group" ? (
+                      <GroupFields
+                        fields={field.item.fields}
+                        value={isPlainObject(item) ? item : {}}
+                        path={entryPath}
+                        shared={shared}
+                        onChange={(next, removed) =>
+                          onChange(replaceAt(items, index, next), removed)
+                        }
+                      />
+                    ) : (
+                      <FieldEditor
+                        field={field.item}
+                        value={item}
+                        path={entryPath}
+                        shared={shared}
+                        onChange={(next, removed) =>
+                          onChange(replaceAt(items, index, next), removed)
+                        }
+                      />
+                    )}
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      )}
+
+      <div>
+        <button type="button" className="button" onClick={addEntry}>
+          <Icon name="add" />
+          Add {field.itemLabel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** The name an entry goes by in the list, taken from the field the definition names. */
+function entryTitle(field: ListField, item: unknown): string {
+  if (!field.itemTitleField || !isPlainObject(item)) return "";
+  const title = item[field.itemTitleField];
+  return typeof title === "string" ? title.trim() : "";
+}
+
+function replaceAt(items: unknown[], index: number, value: unknown): unknown[] {
+  return items.map((item, itemIndex) => (itemIndex === index ? value : item));
+}
+
+function capitalise(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
