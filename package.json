@@ -2,13 +2,23 @@
   "name": "website-manager",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "node --import tsx --test \"src/**/*.test.ts\"",
+    "db:up": "docker compose up -d --wait",
+    "db:down": "docker compose down",
+    "seed": "tsx scripts/seed.ts",
+    "setup": "npm run db:up && npm run seed"
   },
   "dependencies": {
+    "mongodb": "^7.9.1",
     "next": "16.4.6",
     "react": "19.3.0",
     "react-dom": "19.3.0"
@@ -19,6 +29,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   }
 }

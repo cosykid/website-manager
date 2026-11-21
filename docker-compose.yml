@@ -1,0 +1,22 @@
+# MongoDB for local development.
+#
+# It is published on host port 27018, not MongoDB's usual 27017, so it can
+# never collide with (or be mistaken for) a MongoDB already running on your
+# machine. It only listens on localhost because it has no password.
+name: website-manager
+
+services:
+  mongo:
+    image: mongo:8
+    ports:
+      - "127.0.0.1:27018:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  mongo-data:
