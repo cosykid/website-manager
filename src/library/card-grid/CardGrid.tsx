@@ -1,6 +1,6 @@
+import { Button } from "../primitives/Button";
 import { Heading } from "../primitives/Heading";
 import { Image } from "../primitives/Image";
-import { TextLink } from "../primitives/TextLink";
 import styles from "./CardGrid.module.css";
 
 /** Keep in step with ./definition.ts. */
@@ -33,9 +33,9 @@ export function CardGrid({ title, cards }: CardGridProps) {
               {card.link && (
                 // Several cards often share the same link text. The hidden
                 // heading tells screen reader users which card a link is for.
-                <TextLink href={card.link.href} context={card.heading}>
+                <Button href={card.link.href} variant="outline" context={card.heading}>
                   {card.link.label}
-                </TextLink>
+                </Button>
               )}
             </div>
           </li>

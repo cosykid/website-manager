@@ -1,0 +1,42 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 44px at the default text size: a comfortable touch target. */
+  min-height: 2.75rem;
+  padding: 0.375rem 1.25rem;
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-button);
+  font-family: var(--font-heading);
+  font-size: 1.0625rem;
+  font-weight: var(--heading-weight);
+  letter-spacing: var(--heading-letter-spacing);
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  text-transform: var(--heading-transform);
+}
+
+/* The accent pairing comes from the surface the button is on, so a button
+   inside a brand-coloured section reverses and stays readable. */
+.button[data-variant="solid"] {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.button[data-variant="outline"] {
+  background: transparent;
+  color: var(--color-text);
+}
+
+.button:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 0.09em;
+  text-underline-offset: 0.22em;
+}
+
+/* The focus ring is drawn outside the button, on the surface behind it, so
+   it takes that surface's text colour rather than the button's own. */
+.button:focus-visible {
+  outline-color: var(--color-text);
+}

@@ -22,8 +22,14 @@
   border-radius: var(--radius-card);
 }
 
+/* The body fills the card, so in a row of cards every button sits at the
+   same height whatever the length of the heading above it. */
 .body {
-  display: grid;
-  gap: 0.25rem;
-  padding: 1rem 1.125rem 0.75rem;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.875rem;
+  padding: 1rem 1.125rem 1.125rem;
 }
