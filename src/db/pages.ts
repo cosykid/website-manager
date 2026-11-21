@@ -28,6 +28,16 @@ export async function listPages(siteId: string): Promise<Page[]> {
   return records.map(toPage);
 }
 
+/** How many pages each site has, as { siteId: count }, for the list of sites. */
+export async function countPagesBySite(): Promise<Record<string, number>> {
+  const groups = await pagesCollection()
+    .aggregate<{ _id: string; count: number }>([
+      { $group: { _id: "$siteId", count: { $sum: 1 } } },
+    ])
+    .toArray();
+  return Object.fromEntries(groups.map((group) => [group._id, group.count]));
+}
+
 export async function getPage(id: string): Promise<Page | null> {
   if (!ObjectId.isValid(id)) return null;
   const record = await pagesCollection().findOne({ _id: new ObjectId(id) });

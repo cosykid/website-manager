@@ -1,0 +1,105 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { listPages } from "@/db/pages";
+import { getSite } from "@/db/sites";
+import { CreatePageForm } from "@/manager/CreatePageForm";
+import { Icon } from "@/manager/Icon";
+import { getSiteOrigin } from "@/manager/site-origin";
+
+type Props = PageProps<"/sites/[siteId]">;
+
+const updatedFormat = new Intl.DateTimeFormat("en-AU", {
+  dateStyle: "medium",
+  timeStyle: "short",
+});
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { siteId } = await params;
+  const site = await getSite(siteId);
+  return { title: site ? site.name : "Site not found" };
+}
+
+/** One site: its pages, and a form to create another. */
+export default async function SitePagesPage({ params }: Props) {
+  const { siteId } = await params;
+  const site = await getSite(siteId);
+  if (!site) notFound();
+
+  const [pages, origin] = await Promise.all([
+    listPages(site.id),
+    getSiteOrigin(site),
+  ]);
+
+  return (
+    <main className="page">
+      <div className="page-header">
+        <div>
+          <nav aria-label="Breadcrumb">
+            <ol className="breadcrumbs">
+              <li>
+                <Link href="/">Sites</Link>
+              </li>
+              <li aria-current="page">{site.name}</li>
+            </ol>
+          </nav>
+          <h1>{site.name}</h1>
+        </div>
+        <a className="button" href={origin} target="_blank" rel="noreferrer">
+          View site
+          <span className="visually-hidden"> in a new tab</span>
+          <Icon name="open" />
+        </a>
+      </div>
+
+      <section aria-labelledby="pages-heading" className="panel">
+        <h2 id="pages-heading" className="visually-hidden">
+          Pages
+        </h2>
+        {pages.length === 0 ? (
+          <p className="empty">
+            This site has no pages yet. Create the first one below.
+          </p>
+        ) : (
+          <ul className="rows">
+            {pages.map((page) => (
+              <li key={page.id} className="row">
+                <div className="row-main">
+                  <h3 className="row-title">{page.title}</h3>
+                  <p className="muted">
+                    <span className="data">{page.path}</span>
+                    {" · "}
+                    Saved {updatedFormat.format(page.updatedAt)}
+                  </p>
+                </div>
+
+                <div className="row-actions">
+                  <a
+                    className="button"
+                    data-variant="quiet"
+                    href={`${origin}${page.path}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    View page
+                    <span className="visually-hidden"> {page.title} in a new tab</span>
+                    <Icon name="open" />
+                  </a>
+                  <Link
+                    className="button"
+                    href={`/sites/${site.id}/pages/${page.id}`}
+                  >
+                    Edit page
+                    <span className="visually-hidden"> {page.title}</span>
+                  </Link>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <CreatePageForm siteId={site.id} />
+    </main>
+  );
+}
