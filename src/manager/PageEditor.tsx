@@ -246,23 +246,16 @@ export function PageEditor({ site, siteOrigin, page, definitions }: PageEditorPr
             Save page
           </button>
         </div>
+
+        {/* Inside the toolbar, so a failed save is seen however far down the
+            page the editor has scrolled. */}
+        {saveState === "failed" && (
+          <p className={styles.failure} role="alert">
+            <Icon name="problem" />
+            {failure}
+          </p>
+        )}
       </header>
-
-      {saveState === "failed" && (
-        <p className={styles.failure} role="alert">
-          <Icon name="problem" />
-          {failure}
-        </p>
-      )}
-
-      {canUndoRemoval && (
-        <p className={styles.notice} role="status">
-          {removal.label} removed.
-          <button type="button" className="button" onClick={undoRemoval}>
-            Undo
-          </button>
-        </p>
-      )}
 
       <div className={styles.columns}>
         <div className={styles.side}>
@@ -412,6 +405,18 @@ export function PageEditor({ site, siteOrigin, page, definitions }: PageEditorPr
             </>
           )}
         </section>
+      </div>
+
+      {/* Always in the page, so screen readers announce what appears in it. */}
+      <div className={styles.noticeArea} role="status">
+        {canUndoRemoval && (
+          <p className={styles.notice}>
+            {removal.label} removed.
+            <button type="button" className="button" onClick={undoRemoval}>
+              Undo
+            </button>
+          </p>
+        )}
       </div>
 
       <ComponentPicker

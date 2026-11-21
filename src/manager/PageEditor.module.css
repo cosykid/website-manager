@@ -49,18 +49,15 @@
   margin-right: -0.75rem;
 }
 
-.failure,
-.notice {
+/* A row of its own in the toolbar, under the title and buttons. */
+.failure {
   display: flex;
+  flex-basis: 100%;
   align-items: center;
   gap: 0.625rem;
-  margin-bottom: 1.25rem;
   padding: 0.75rem 1rem;
-  border-radius: var(--radius);
-}
-
-.failure {
   border: 1px solid var(--danger);
+  border-radius: var(--radius);
   background: var(--danger-soft);
   color: var(--danger);
   font-weight: 600;
@@ -70,10 +67,27 @@
   flex: none;
 }
 
+/* "Card removed. Undo" floats at the bottom of the window. It is in view
+   wherever the removal happened, and nothing on the page moves when it
+   appears or goes. */
+.noticeArea {
+  position: sticky;
+  bottom: 1rem;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+}
+
 .notice {
-  justify-content: space-between;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  padding: 0.5rem 0.5rem 0.5rem 1rem;
   border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
   background: var(--raised);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.2);
 }
 
 .columns {

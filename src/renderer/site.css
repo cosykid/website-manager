@@ -65,6 +65,17 @@ body,
   --color-on-accent: var(--theme-brand);
 }
 
+/* For readers who ask their device for more contrast: secondary text and
+   edges take the main text colour. Brand surfaces already do this. */
+@media (prefers-contrast: more) {
+  body,
+  [data-surface="base"],
+  [data-surface="alt"] {
+    --color-text-muted: var(--theme-text);
+    --color-border: var(--theme-text);
+  }
+}
+
 body,
 [data-surface] {
   background: var(--color-bg);

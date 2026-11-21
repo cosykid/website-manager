@@ -55,6 +55,15 @@
   }
 }
 
+/* For readers who ask their device for more contrast: secondary text takes
+   the main text colour and faint edges take the strong one. */
+@media (prefers-contrast: more) {
+  :root {
+    --text-muted: var(--text);
+    --border: var(--border-strong);
+  }
+}
+
 *,
 *::before,
 *::after {
@@ -74,6 +83,15 @@ body {
   font-family: var(--font-ui);
   font-size: 0.9375rem;
   line-height: 1.5;
+}
+
+/* Text on a phone is read from further away, so it is larger: 17px. That
+   also stops phones zooming in on a focused input, which they do when its
+   text is under 16px. */
+@media (pointer: coarse) {
+  body {
+    font-size: 1.0625rem;
+  }
 }
 
 h1,
@@ -237,21 +255,17 @@ a {
   font: inherit;
 }
 
-/* Phones zoom the whole page in when a focused input's text is under 16px. */
-@media (pointer: coarse) {
-  .input {
-    font-size: 1rem;
-  }
-}
 
 textarea.input {
   min-height: 6rem;
   resize: vertical;
 }
 
+/* An example, not a value: the muted colour at full strength, which is
+   6.4:1 on a light input and 7.1:1 on a dark one. */
 .input::placeholder {
   color: var(--text-muted);
-  opacity: 0.8;
+  opacity: 1;
 }
 
 /* A problem is shown by a thicker border and a message, not by colour alone. */
@@ -337,9 +351,27 @@ textarea.input {
   list-style: none;
 }
 
+.breadcrumbs li {
+  display: flex;
+  align-items: center;
+}
+
 .breadcrumbs li + li::before {
   content: "/";
   margin-right: 0.375rem;
+}
+
+/* A text link is a small target for a finger, so it gets a taller one. */
+@media (pointer: coarse) {
+  .breadcrumbs li {
+    min-height: var(--control-height);
+  }
+
+  .breadcrumbs a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--control-height);
+  }
 }
 
 .page-header {
