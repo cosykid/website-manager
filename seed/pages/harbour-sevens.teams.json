@@ -10,6 +10,14 @@
       "props": { "layout": "full", "background": "none" },
       "children": [
         {
+          "id": "teams-intro",
+          "type": "banner",
+          "props": {
+            "heading": "The teams",
+            "message": "Two pools of two. The top side from each pool plays in Sunday's final."
+          }
+        },
+        {
           "id": "teams-pools",
           "type": "section",
           "props": { "layout": "two-column", "background": "light" },

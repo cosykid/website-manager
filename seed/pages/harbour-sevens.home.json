@@ -5,6 +5,22 @@
   "title": "Home",
   "content": [
     {
+      "id": "home-welcome",
+      "type": "section",
+      "props": { "layout": "full", "background": "none" },
+      "children": [
+        {
+          "id": "home-welcome-banner",
+          "type": "banner",
+          "props": {
+            "heading": "Seven a side. One big weekend.",
+            "message": "Four clubs, two pools and a harbour full of noise. Two days of sevens by the water this summer.",
+            "button": { "label": "See the teams", "href": "/teams" }
+          }
+        }
+      ]
+    },
+    {
       "id": "home-pools",
       "type": "section",
       "props": { "layout": "full", "background": "light" },
@@ -36,6 +52,21 @@
                 "link": { "label": "See all teams", "href": "/teams" }
               }
             ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "home-visit",
+      "type": "section",
+      "props": { "layout": "full", "background": "brand" },
+      "children": [
+        {
+          "id": "home-visit-banner",
+          "type": "banner",
+          "props": {
+            "heading": "Bring the whole crew",
+            "message": "Kids under 12 get in free, and the gates open at nine each morning."
           }
         }
       ]

@@ -5,6 +5,21 @@
   "title": "Squad",
   "content": [
     {
+      "id": "squad-intro",
+      "type": "section",
+      "props": { "layout": "full", "background": "none" },
+      "children": [
+        {
+          "id": "squad-intro-banner",
+          "type": "banner",
+          "props": {
+            "heading": "The squad",
+            "message": "The players wearing the jersey this season."
+          }
+        }
+      ]
+    },
+    {
       "id": "squad-units",
       "type": "section",
       "props": { "layout": "two-column", "background": "light" },
@@ -39,6 +54,14 @@
               {
                 "heading": "Priya Ferreira",
                 "image": { "url": "/seed/ironbarks/jersey-10.svg", "alt": "Jersey number 10" }
+              },
+              {
+                "heading": "Jo Castellanos",
+                "image": { "url": "/seed/ironbarks/jersey-13.svg", "alt": "Jersey number 13" }
+              },
+              {
+                "heading": "Bree Halvorsen",
+                "image": { "url": "/seed/ironbarks/jersey-15.svg", "alt": "Jersey number 15" }
               }
             ]
           }

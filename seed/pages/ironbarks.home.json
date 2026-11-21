@@ -5,6 +5,22 @@
   "title": "Home",
   "content": [
     {
+      "id": "home-welcome",
+      "type": "section",
+      "props": { "layout": "full", "background": "brand" },
+      "children": [
+        {
+          "id": "home-welcome-banner",
+          "type": "banner",
+          "props": {
+            "heading": "Hard as ironbark",
+            "message": "The 2027 season starts in March. Fifteen players, one jersey each, and a home crowd that never sits down.",
+            "button": { "label": "Meet the squad", "href": "/squad" }
+          }
+        }
+      ]
+    },
+    {
       "id": "home-squad",
       "type": "section",
       "props": { "layout": "full", "background": "none" },
@@ -43,6 +59,29 @@
                 "image": { "url": "/seed/ironbarks/jersey-15.svg", "alt": "Jersey number 15" }
               }
             ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "home-club",
+      "type": "section",
+      "props": { "layout": "two-column", "background": "light" },
+      "children": [
+        {
+          "id": "home-club-training",
+          "type": "banner",
+          "props": {
+            "heading": "Train with us",
+            "message": "Open sessions run on Tuesday and Thursday evenings. Bring boots and a mouthguard. All levels welcome."
+          }
+        },
+        {
+          "id": "home-club-game-day",
+          "type": "banner",
+          "props": {
+            "heading": "Game day",
+            "message": "Gates open an hour before kick-off. Kids under 12 get in free."
           }
         }
       ]
