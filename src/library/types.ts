@@ -5,9 +5,10 @@
  * to draw the editing form, and the server reads the same data to check what
  * an editor entered. Adding a component never means writing a form.
  *
- * To support a new kind of input, add a type to `Field` below, then teach two
- * places about it: `validate.ts` (its rules and its empty value) and
- * `src/manager/FieldEditor.tsx` (the input to draw).
+ * To support a new kind of input, add a type to `Field` below. TypeScript then
+ * reports an error in each place that must handle it: `validate.ts` (its
+ * empty value and its rules) and `src/manager/FieldEditor.tsx` (the input to
+ * draw). See `unhandledKind` at the end of this file.
  */
 
 type FieldBase = {
@@ -61,6 +62,18 @@ export type ListField = FieldBase & {
 };
 
 export type Field = TextField | UrlField | SelectField | GroupField | ListField;
+
+/**
+ * Goes in the `default` branch of every `switch` over `field.kind`.
+ *
+ * While each kind has its own `case`, no field can reach the default branch,
+ * so its type there is `never` and this call compiles. Add a kind to `Field`
+ * without adding a `case`, and TypeScript reports an error on the call. That
+ * is how the compiler lists every place a new kind of field must be handled.
+ */
+export function unhandledKind(field: never): never {
+  throw new Error(`No case for this kind of field: ${JSON.stringify(field)}`);
+}
 
 export type ComponentDefinition = {
   /**

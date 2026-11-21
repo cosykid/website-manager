@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import type {
-  Field,
-  GroupField,
-  ListField,
-  SelectField,
-  TextField,
-  UrlField,
+import {
+  unhandledKind,
+  type Field,
+  type GroupField,
+  type ListField,
+  type SelectField,
+  type TextField,
+  type UrlField,
 } from "@/library/types";
 import { emptyValue, fillGroup, type Issue } from "@/library/validate";
 import { isPlainObject } from "@/page-model/shape";
@@ -22,7 +23,8 @@ import { Icon } from "./Icon";
  * back into the same code for the fields inside them, which is how a list of
  * cards, each with an image and an optional link, needs no code of its own.
  *
- * A new kind of field needs one more case in `FieldEditor` below.
+ * A new kind of field needs one more case in `FieldEditor` below. TypeScript
+ * reports an error there until it has one.
  */
 
 /**
@@ -96,6 +98,8 @@ function FieldEditor(props: FieldEditorProps) {
       return <GroupEditor {...props} field={field} />;
     case "list":
       return <ListEditor {...props} field={field} />;
+    default:
+      return unhandledKind(field);
   }
 }
 

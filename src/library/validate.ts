@@ -1,6 +1,6 @@
 import { isPlainObject } from "@/page-model/shape";
 import type { ComponentInstance } from "@/page-model/types";
-import type { ComponentDefinition, Field } from "./types";
+import { unhandledKind, type ComponentDefinition, type Field } from "./types";
 
 /**
  * Checks values against field descriptions.
@@ -29,6 +29,8 @@ export function emptyValue(field: Field): unknown {
     case "group":
       // An optional group starts out absent, e.g. a card with no link yet.
       return field.optional ? undefined : fillGroup(field.fields, {});
+    default:
+      return unhandledKind(field);
   }
 }
 
@@ -148,6 +150,9 @@ function validateValue(field: Field, value: unknown, path: string): Issue[] {
         validateValue(field.item, item, `${path}.${index}`),
       );
     }
+
+    default:
+      return unhandledKind(field);
   }
 }
 
