@@ -62,7 +62,9 @@ export function ComponentPicker({
                 onClick={() => onPick(definition.type)}
               >
                 <span className={styles.choiceText}>
-                  <span className={styles.choiceLabel}>{definition.label}</span>
+                  {/* The space keeps the name and description apart when a
+                      screen reader reads the button out. */}
+                  <span className={styles.choiceLabel}>{definition.label}</span>{" "}
                   <span className={styles.choiceDescription}>
                     {definition.description}
                   </span>
