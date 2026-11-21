@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "siteId": "harbour-sevens",
+  "path": "/teams",
+  "title": "Teams",
+  "content": [
+    {
+      "id": "teams-wrapper",
+      "type": "section",
+      "props": { "layout": "full", "background": "none" },
+      "children": [
+        {
+          "id": "teams-pools",
+          "type": "section",
+          "props": { "layout": "two-column", "background": "light" },
+          "children": [
+            {
+              "id": "teams-pool-a",
+              "type": "card-grid",
+              "props": {
+                "title": "Pool A",
+                "cards": [
+                  {
+                    "heading": "Coral Coast",
+                    "image": { "url": "/seed/harbour-sevens/coral-coast.svg", "alt": "" }
+                  },
+                  {
+                    "heading": "Southern Swell",
+                    "image": { "url": "/seed/harbour-sevens/southern-swell.svg", "alt": "" }
+                  }
+                ]
+              }
+            },
+            {
+              "id": "teams-pool-b",
+              "type": "card-grid",
+              "props": {
+                "title": "Pool B",
+                "cards": [
+                  {
+                    "heading": "Bay City",
+                    "image": { "url": "/seed/harbour-sevens/bay-city.svg", "alt": "" }
+                  },
+                  {
+                    "heading": "Northern Tide",
+                    "image": { "url": "/seed/harbour-sevens/northern-tide.svg", "alt": "" }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

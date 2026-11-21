@@ -1,0 +1,74 @@
+[
+  {
+    "id": "ironbarks",
+    "name": "Ironbarks",
+    "domains": ["ironbarks.localhost"],
+    "navigation": [
+      { "label": "Home", "href": "/" },
+      { "label": "Squad", "href": "/squad" }
+    ],
+    "theme": {
+      "scheme": "dark",
+      "colors": {
+        "surface": "#0F1F17",
+        "surfaceAlt": "#1A3024",
+        "text": "#F4F1E4",
+        "textMuted": "#B7C4B6",
+        "border": "#34503F",
+        "brand": "#F5B301",
+        "onBrand": "#1A1503",
+        "accent": "#F5B301",
+        "onAccent": "#1A1503"
+      },
+      "fonts": {
+        "heading": "\"DIN Condensed\", \"Avenir Next Condensed\", \"Arial Narrow\", Impact, sans-serif",
+        "body": "system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif"
+      },
+      "heading": {
+        "weight": "700",
+        "transform": "uppercase",
+        "letterSpacing": "0.02em"
+      },
+      "radius": {
+        "card": "2px",
+        "button": "2px"
+      }
+    }
+  },
+  {
+    "id": "harbour-sevens",
+    "name": "Harbour Sevens",
+    "domains": ["harbour-sevens.localhost"],
+    "navigation": [
+      { "label": "Home", "href": "/" },
+      { "label": "Teams", "href": "/teams" }
+    ],
+    "theme": {
+      "scheme": "light",
+      "colors": {
+        "surface": "#FFFFFF",
+        "surfaceAlt": "#E8F3FB",
+        "text": "#0B2239",
+        "textMuted": "#45607B",
+        "border": "#C5D9EA",
+        "brand": "#0B5CAD",
+        "onBrand": "#FFFFFF",
+        "accent": "#C2255C",
+        "onAccent": "#FFFFFF"
+      },
+      "fonts": {
+        "heading": "\"Avenir Next\", Avenir, \"Century Gothic\", \"Trebuchet MS\", sans-serif",
+        "body": "\"Avenir Next\", Avenir, \"Segoe UI\", system-ui, sans-serif"
+      },
+      "heading": {
+        "weight": "800",
+        "transform": "none",
+        "letterSpacing": "-0.01em"
+      },
+      "radius": {
+        "card": "20px",
+        "button": "999px"
+      }
+    }
+  }
+]

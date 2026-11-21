@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "siteId": "ironbarks",
+  "path": "/",
+  "title": "Home",
+  "content": [
+    {
+      "id": "home-squad",
+      "type": "section",
+      "props": { "layout": "full", "background": "none" },
+      "children": [
+        {
+          "id": "home-squad-grid",
+          "type": "card-grid",
+          "props": {
+            "title": "Meet the squad",
+            "cards": [
+              {
+                "heading": "Tessa Whitlock",
+                "image": { "url": "/seed/ironbarks/jersey-1.svg", "alt": "Jersey number 1" },
+                "link": { "label": "View the squad", "href": "/squad" }
+              },
+              {
+                "heading": "Aroha Bennett",
+                "image": { "url": "/seed/ironbarks/jersey-2.svg", "alt": "Jersey number 2" },
+                "link": { "label": "View the squad", "href": "/squad" }
+              },
+              {
+                "heading": "Lani Okafor",
+                "image": { "url": "/seed/ironbarks/jersey-9.svg", "alt": "Jersey number 9" },
+                "link": { "label": "View the squad", "href": "/squad" }
+              },
+              {
+                "heading": "Priya Ferreira",
+                "image": { "url": "/seed/ironbarks/jersey-10.svg", "alt": "Jersey number 10" }
+              },
+              {
+                "heading": "Jo Castellanos",
+                "image": { "url": "/seed/ironbarks/jersey-13.svg", "alt": "Jersey number 13" }
+              },
+              {
+                "heading": "Bree Halvorsen",
+                "image": { "url": "/seed/ironbarks/jersey-15.svg", "alt": "Jersey number 15" }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
