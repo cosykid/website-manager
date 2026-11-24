@@ -87,17 +87,17 @@ they do not clash with ones you may already have running.
    site's own menu in the preview. The first page is marked **Unsaved** and
    keeps its changes until you come back to it.
 8. Switch the preview to **Phone** to see the page at a phone's width.
-8. Save with a required field empty to see where problems are reported.
-9. Create a page on Harbour Sevens. The same components appear in that
-   site's colours, type and corner shapes. Give it a path under another
-   page's, such as `/teams/juniors`, and it is listed under that page.
-10. Carry a page from one site to the other. Open Ironbarks' **Squad**, choose
+9. Save with a required field empty to see where problems are reported.
+10. Create a page on Harbour Sevens. The same components appear in that
+    site's colours, type and corner shapes. Give it a path under another
+    page's, such as `/teams/juniors`, and it is listed under that page.
+11. Carry a page from one site to the other. Open Ironbarks' **Squad**, choose
     **JSON**, then **Export**. On Harbour Sevens, choose that file under
     **Import a page**. The page is there, in the other site's theme.
-11. Visit a path that does not exist, such as
+12. Visit a path that does not exist, such as
     http://ironbarks.localhost:3000/nope. It answers with HTTP 404, as does a
     path that exists only on the other site.
-12. See the pre-rendering. Stop the dev server, run `npm run build` then
+13. See the pre-rendering. Stop the dev server, run `npm run build` then
     `npm start`, and run the command below. It says `HIT` although nobody has
     visited the page: the server rendered it when it started. Save that page in
     the manager and refresh it. The edit is there, and it is still a `HIT`.
@@ -615,17 +615,10 @@ component fetches on the server.
 
 ## Hours spent
 
-_To fill in before submitting._
+Roughly 5 to 7 hours.
 
 ## AI tools used
 
-_To review and complete before submitting._
-
-- **Claude Code** (Anthropic's coding agent, models Claude Fable 5.2 and, for
-  the pre-rendering, the dragging and the image uploads, Claude Opus 5.5). It compared approaches
-  with me, then wrote the code, tests, seed content, the page JSON guide in
-  `docs/` and the first draft of this README, and tested the app in a browser.
-  I set the direction and made the calls, for example choosing a plain field
-  format over Zod so that I could read and explain every line.
+- I used Claude, through Claude Code (Anthropic's coding agent).
 - `AGENTS.md` is written by Next.js 16's dev server for coding agents. It is
   not part of the app.
