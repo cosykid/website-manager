@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { isDraftMessage, type PreviewMessage } from "@/page-model/preview";
+import { findPlace } from "@/page-model/tree";
 import type { ComponentInstance } from "@/page-model/types";
 import styles from "./Preview.module.css";
 import { PreviewTree } from "./PreviewTree";
@@ -63,7 +64,10 @@ export function PreviewCanvas({ initialContent }: { initialContent: ComponentIns
     return () => document.removeEventListener("click", pick);
   }, []);
 
-  // Bring the component whose form is open into view.
+  // Where the component whose form is open is on the page.
+  const place = selectedId ? findPlace(content, selectedId) : null;
+
+  // Bring it into view when it opens, and again whenever it moves.
   useEffect(() => {
     if (!selectedId) return;
 
@@ -83,7 +87,7 @@ export function PreviewCanvas({ initialContent }: { initialContent: ComponentIns
       top: window.scrollY + box.top - 24,
       behavior: calm ? "auto" : "smooth",
     });
-  }, [selectedId]);
+  }, [selectedId, place?.parentId, place?.beforeId]);
 
   if (content.length === 0) {
     return (

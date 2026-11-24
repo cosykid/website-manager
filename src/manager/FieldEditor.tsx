@@ -282,11 +282,11 @@ function ListEditor({
 
   // Entries and gaps both go by number. Gap 0 is in front of entry 0, and the
   // last gap is after the last entry.
-  const { list, drag, startDrag } = useDragToMove((id, gap) =>
-    moveEntry(Number(id), Number(gap)),
-  );
-  // Where a drag would drop. The gap just after an entry is where it is now.
-  const target = drag && drag.gap !== String(Number(drag.id) + 1) ? drag.gap : null;
+  const { list, drag, startDrag } = useDragToMove({
+    onDrop: (id, gap) => moveEntry(Number(id), Number(gap)),
+  });
+  // The entry that was moved last, to show where it landed.
+  const [landedIndex, setLandedIndex] = useState<number | null>(null);
 
   function addEntry() {
     const entry =
@@ -316,6 +316,7 @@ function ListEditor({
     order.splice(gap > index ? gap - 1 : gap, 0, index);
 
     onChange(order.map((number) => items[number]));
+    setLandedIndex(order.indexOf(index));
     // Keep the open entry open as it moves.
     if (openIndex !== null) setOpenIndex(order.indexOf(openIndex));
   }
@@ -324,8 +325,10 @@ function ListEditor({
     <div
       ref={list}
       className={styles.list}
+      style={{ minHeight: drag?.listHeight }}
       data-drag-list
-      data-dragging={drag ? true : undefined}
+      data-dragging={drag ? (drag.moved ? "moved" : "lifted") : undefined}
+      onAnimationEnd={() => setLandedIndex(null)}
     >
       <p className="label" id={`${shared.idPrefix}-${path}-label`}>
         {field.label}
@@ -351,113 +354,115 @@ function ListEditor({
             const panelId = `${shared.idPrefix}-${entryPath}-panel`;
 
             return (
-              <li
-                key={index}
-                className={styles.entry}
-                data-open={isOpen || undefined}
-                data-dragged={drag?.id === String(index) || undefined}
-              >
-                <Gap name={String(index)} target={target} />
+              <li key={index} data-dragged={drag?.id === String(index) || undefined}>
+                <Gap name={String(index)} drag={drag} />
 
-                <div className={styles.entryRow}>
-                  {/* Drawn under the pointer, and always on a touch screen. */}
-                  <span
-                    className={styles.entryHandle}
-                    data-drag-handle
-                    onPointerDown={(press) => startDrag(press, String(index))}
-                    aria-hidden="true"
+                <div
+                  className={`drag-item ${styles.entry}`}
+                  data-open={isOpen || undefined}
+                >
+                  <div
+                    className={styles.entryRow}
+                    data-drag-row
+                    data-landed={landedIndex === index || undefined}
                   >
-                    <Icon name="grip" size={14} />
-                  </span>
-
-                  <button
-                    type="button"
-                    className={styles.entryToggle}
-                    aria-expanded={isOpen}
-                    aria-controls={isOpen ? panelId : undefined}
-                    onPointerDown={(press) => startDrag(press, String(index))}
-                    onClick={() => setOpenIndex(isOpen ? null : index)}
-                  >
-                    <span className={styles.chevron} data-open={isOpen || undefined}>
-                      <Icon name="next" size={14} />
+                    <span
+                      className={styles.entryHandle}
+                      data-drag-handle
+                      title="Drag to move"
+                      onPointerDown={(press) => startDrag(press, String(index))}
+                      aria-hidden="true"
+                    >
+                      <Icon name="grip" />
                     </span>
-                    {/* The position is read out by screen readers, to tell
-                        two entries with the same name apart. The spaces keep
-                        the parts apart: "1 Tessa Whitlock". */}
-                    <span className="visually-hidden">{index + 1}</span>{" "}
-                    <span className={styles.entryTitle} data-untitled={!title || undefined}>
-                      {title || `Untitled ${field.itemLabel}`}
-                    </span>{" "}
-                    {problems > 0 && (
-                      <span className="problem-count">
-                        <Icon name="problem" size={14} />
-                        {problems} {problems === 1 ? "problem" : "problems"}
+
+                    <button
+                      type="button"
+                      className={styles.entryToggle}
+                      aria-expanded={isOpen}
+                      aria-controls={isOpen ? panelId : undefined}
+                      onPointerDown={(press) => startDrag(press, String(index))}
+                      onClick={() => setOpenIndex(isOpen ? null : index)}
+                    >
+                      <span className={styles.chevron} data-open={isOpen || undefined}>
+                        <Icon name="next" size={14} />
                       </span>
-                    )}
-                  </button>
+                      {/* The position is read out by screen readers, to tell
+                          two entries with the same name apart. The spaces keep
+                          the parts apart: "1 Tessa Whitlock". */}
+                      <span className="visually-hidden">{index + 1}</span>{" "}
+                      <EntryTitle title={title} field={field} />{" "}
+                      {problems > 0 && (
+                        <span className="problem-count">
+                          <Icon name="problem" size={14} />
+                          {problems} {problems === 1 ? "problem" : "problems"}
+                        </span>
+                      )}
+                    </button>
 
-                  {/* Shown for the open entry, and for an entry under the
-                      pointer or holding keyboard focus: see .entryActions. */}
-                  <div className={styles.entryActions}>
-                    <button
-                      type="button"
-                      className="icon-button"
-                      aria-label={`Move ${name} up`}
-                      disabled={index === 0}
-                      onClick={() => moveEntry(index, index - 1)}
-                    >
-                      <Icon name="up" />
-                    </button>
-                    <button
-                      type="button"
-                      className="icon-button"
-                      aria-label={`Move ${name} down`}
-                      disabled={index === items.length - 1}
-                      // Past the gap after it, and the one after that.
-                      onClick={() => moveEntry(index, index + 2)}
-                    >
-                      <Icon name="down" />
-                    </button>
-                    <button
-                      type="button"
-                      className="icon-button"
-                      aria-label={`Remove ${name}`}
-                      onClick={() => removeEntry(index)}
-                    >
-                      <Icon name="remove" />
-                    </button>
+                    {/* Shown for the open entry, and for an entry under the
+                        pointer or holding keyboard focus: see .entryActions. */}
+                    <div className={styles.entryActions}>
+                      <button
+                        type="button"
+                        className="icon-button"
+                        aria-label={`Move ${name} up`}
+                        disabled={index === 0}
+                        onClick={() => moveEntry(index, index - 1)}
+                      >
+                        <Icon name="up" />
+                      </button>
+                      <button
+                        type="button"
+                        className="icon-button"
+                        aria-label={`Move ${name} down`}
+                        disabled={index === items.length - 1}
+                        // Past the gap after it, and the one after that.
+                        onClick={() => moveEntry(index, index + 2)}
+                      >
+                        <Icon name="down" />
+                      </button>
+                      <button
+                        type="button"
+                        className="icon-button"
+                        aria-label={`Remove ${name}`}
+                        onClick={() => removeEntry(index)}
+                      >
+                        <Icon name="remove" />
+                      </button>
+                    </div>
                   </div>
+
+                  {isOpen && (
+                    <div className={styles.entryBody} id={panelId}>
+                      {field.item.kind === "group" ? (
+                        <GroupFields
+                          fields={field.item.fields}
+                          value={isPlainObject(item) ? item : {}}
+                          path={entryPath}
+                          shared={shared}
+                          onChange={(next, removed) =>
+                            onChange(replaceAt(items, index, next), removed)
+                          }
+                        />
+                      ) : (
+                        <FieldEditor
+                          field={field.item}
+                          value={item}
+                          path={entryPath}
+                          shared={shared}
+                          onChange={(next, removed) =>
+                            onChange(replaceAt(items, index, next), removed)
+                          }
+                        />
+                      )}
+                    </div>
+                  )}
                 </div>
-
-                {isOpen && (
-                  <div className={styles.entryBody} id={panelId}>
-                    {field.item.kind === "group" ? (
-                      <GroupFields
-                        fields={field.item.fields}
-                        value={isPlainObject(item) ? item : {}}
-                        path={entryPath}
-                        shared={shared}
-                        onChange={(next, removed) =>
-                          onChange(replaceAt(items, index, next), removed)
-                        }
-                      />
-                    ) : (
-                      <FieldEditor
-                        field={field.item}
-                        value={item}
-                        path={entryPath}
-                        shared={shared}
-                        onChange={(next, removed) =>
-                          onChange(replaceAt(items, index, next), removed)
-                        }
-                      />
-                    )}
-                  </div>
-                )}
 
                 {/* There is one more gap after the last entry. */}
                 {index === items.length - 1 && (
-                  <Gap name={String(items.length)} target={target} />
+                  <Gap name={String(items.length)} drag={drag} />
                 )}
               </li>
             );
@@ -467,7 +472,15 @@ function ListEditor({
 
       {drag && (
         <Held drag={drag}>
-          {entryTitle(field, items[Number(drag.id)]) || `Untitled ${field.itemLabel}`}
+          <span className={styles.entryHandle}>
+            <Icon name="grip" />
+          </span>
+          <span className={styles.entryToggle}>
+            <span className={styles.chevron}>
+              <Icon name="next" size={14} />
+            </span>
+            <EntryTitle title={entryTitle(field, items[Number(drag.id)])} field={field} />
+          </span>
         </Held>
       )}
 
@@ -478,6 +491,14 @@ function ListEditor({
         </button>
       </div>
     </div>
+  );
+}
+
+function EntryTitle({ title, field }: { title: string; field: ListField }) {
+  return (
+    <span className={styles.entryTitle} data-untitled={!title || undefined}>
+      {title || `Untitled ${field.itemLabel}`}
+    </span>
   );
 }
 

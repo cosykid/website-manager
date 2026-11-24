@@ -78,8 +78,8 @@
   font-weight: 650;
 }
 
-/* The path gives way first when there is not room for everything. */
+/* The paths are lined up on the right. */
 .page :global(.tree-note) {
-  flex: 1;
+  max-width: none;
   text-align: right;
 }

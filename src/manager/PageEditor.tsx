@@ -59,11 +59,13 @@ type PageEditorProps = {
   definitions: Record<string, ComponentDefinition>;
 };
 
-/** Which form is open, if any. */
-type Open =
-  | { kind: "list" }
-  | { kind: "details" }
-  | { kind: "component"; id: string };
+/** What is chosen, to edit. */
+type Open = {
+  /** The component, or null for the page itself and its details. */
+  id: string | null;
+  /** Whether its form is open. A wide window shows the form all the time. */
+  form: boolean;
+};
 
 /** The HTML id of the page's own row, for putting focus back on it. */
 const detailsRowId = "details-row";
@@ -104,7 +106,7 @@ export function PageEditor({
   const { title, path, content } = draft ?? saved;
   const pageTitle = title.trim() || "Untitled page";
 
-  const [open, setOpen] = useState<Open>({ kind: "list" });
+  const [open, setOpen] = useState<Open>({ id: null, form: false });
   // The components in the list that are folded shut.
   const [folded, setFolded] = useState<string[]>([]);
   // A narrow screen has room for one side at a time. This says which.
@@ -123,6 +125,10 @@ export function PageEditor({
   const [picker, setPicker] = useState<{ parentId: string | null } | null>(null);
   // Whether the "Page JSON" dialog is open.
   const [jsonOpen, setJsonOpen] = useState(false);
+  // While a component is dragged: which one, and where it would go. The
+  // preview shows it there already.
+  const [dragged, setDragged] = useState<{ id: string; place: Place } | null>(null);
+
   // The last change that moved something or took something away: what to say
   // about it, and the page just before and just after. "Undo" is offered for
   // as long as nothing else has changed since.
@@ -133,12 +139,10 @@ export function PageEditor({
   } | null>(null);
 
   const formHeading = useRef<HTMLHeadingElement>(null);
-  // Whether the next change of what is open should move keyboard focus, and
-  // the row to put it on when a form closes.
+  // Whether the next change of what is open should move keyboard focus.
   const moveFocus = useRef(false);
-  const returnTo = useRef("");
 
-  const selected = open.kind === "component" ? findInstance(content, open.id) : undefined;
+  const selected = open.id ? findInstance(content, open.id) : undefined;
   const selectedDefinition = selected ? definitions[selected.type] : undefined;
   // What it is inside, and the components it is in a row with.
   const ancestors = selected ? findAncestors(content, selected.id) : [];
@@ -155,27 +159,29 @@ export function PageEditor({
     if (!moveFocus.current) return;
     moveFocus.current = false;
 
-    if (open.kind === "list") document.getElementById(returnTo.current)?.focus();
-    else formHeading.current?.focus();
+    const row = open.id ? rowId(open.id) : detailsRowId;
+    if (open.form) formHeading.current?.focus();
+    else document.getElementById(row)?.focus();
   }, [open]);
 
-  /** Opens a form: the page details, or one component's. */
-  function openForm(next: Open) {
+  /** Opens a form: one component's, or the page details for null. */
+  function openForm(id: string | null) {
     moveFocus.current = true;
-    setOpen(next);
+    setOpen({ id, form: true });
     // On a narrow screen the form may be behind the preview.
     setNarrowSide("edit");
+    if (id) unfoldAround(id, content);
+  }
 
-    // The row it belongs to may be folded away inside another.
-    if (next.kind === "component") {
-      const around = findAncestors(content, next.id).map((ancestor) => ancestor.id);
-      setFolded(folded.filter((id) => !around.includes(id)));
-    }
+  /** Opens the rows a component's own row may be folded away inside. */
+  function unfoldAround(id: string, nodes: ComponentInstance[]) {
+    const around = findAncestors(nodes, id).map((ancestor) => ancestor.id);
+    setFolded(folded.filter((other) => !around.includes(other)));
   }
 
   /** A component was clicked in the preview. */
   function openFromPreview(id: string) {
-    if (findInstance(content, id)) openForm({ kind: "component", id });
+    if (findInstance(content, id)) openForm(id);
   }
 
   /** A link in the site's own menu was clicked in the preview. */
@@ -187,9 +193,13 @@ export function PageEditor({
   }
 
   function backToList() {
-    returnTo.current = open.kind === "component" ? rowId(open.id) : detailsRowId;
     moveFocus.current = true;
-    setOpen({ kind: "list" });
+    setOpen({ ...open, form: false });
+  }
+
+  /** Back to the start: the list, with the page itself chosen. */
+  function showList() {
+    setOpen({ id: null, form: false });
   }
 
   function foldRow(id: string, shut: boolean) {
@@ -211,10 +221,8 @@ export function PageEditor({
   function undo() {
     if (!undoable) return;
     change({ content: undoable.before });
-    // The open form may belong to a component the undo takes away again.
-    if (open.kind === "component" && !findInstance(undoable.before, open.id)) {
-      setOpen({ kind: "list" });
-    }
+    // The undo may take away the component that is chosen.
+    if (open.id && !findInstance(undoable.before, open.id)) showList();
     setUndoable(null);
   }
 
@@ -230,7 +238,7 @@ export function PageEditor({
     if (definition.acceptsChildren) instance.children = [];
 
     change({ content: insertInstance(content, picker.parentId, instance) });
-    openForm({ kind: "component", id: instance.id });
+    openForm(instance.id);
     setPicker(null);
   }
 
@@ -246,6 +254,10 @@ export function PageEditor({
     const into = parent ? `into ${labelOf(parent, definitions)}` : "on to the page";
     const label = labelOf(instance, definitions);
     changeWithUndo(after, changesParent ? `${label} moved ${into}.` : `${label} moved.`);
+
+    // Choosing it shows where it went, in the list and in the preview.
+    setOpen({ ...open, id });
+    unfoldAround(id, after);
   }
 
   /** Moves the component whose form is open one place among its neighbours. */
@@ -261,10 +273,8 @@ export function PageEditor({
 
     const after = removeInstance(content, id);
     changeWithUndo(after, `${labelOf(instance, definitions)} removed.`);
-    // The open form may belong to what was removed. Show the list again.
-    if (open.kind === "component" && !findInstance(after, open.id)) {
-      setOpen({ kind: "list" });
-    }
+    // It may be the component that is chosen, or what that one is in.
+    if (open.id && !findInstance(after, open.id)) showList();
   }
 
   function changeSelectedProps(props: Record<string, unknown>, removed?: string) {
@@ -285,8 +295,8 @@ export function PageEditor({
     // A file can hold props that do not suit their component. Mark them
     // straight away, as a refused save would.
     if (Object.keys(validateTree(after, definitions)).length > 0) setShowProblems(true);
-    // An open form may belong to a component that is no longer on the page.
-    setOpen({ kind: "list" });
+    // What was chosen may be a component that is no longer on the page.
+    showList();
     setJsonOpen(false);
   }
 
@@ -296,11 +306,9 @@ export function PageEditor({
    * row says how many problems it has.
    */
   function revealProblems(found: IssuesByInstance, detailsHaveProblem: boolean) {
-    const openFormHasProblem =
-      (open.kind === "component" && open.id in found) ||
-      (open.kind === "details" && detailsHaveProblem);
+    const openFormHasProblem = open.id ? open.id in found : detailsHaveProblem;
 
-    if (!openFormHasProblem) setOpen({ kind: "list" });
+    if (!openFormHasProblem) showList();
     setFolded([]);
     setNarrowSide("edit");
   }
@@ -433,7 +441,7 @@ export function PageEditor({
 
       <div
         className={styles.columns}
-        data-open={open.kind === "list" ? "list" : "form"}
+        data-open={open.form ? "form" : "list"}
         data-narrow-side={narrowSide}
       >
         <div className={styles.listPanel}>
@@ -449,7 +457,7 @@ export function PageEditor({
                 className={`tree-row ${styles.pageRow}`}
                 style={atDepth(0)}
                 data-selected={selected === undefined || undefined}
-                onClick={() => openForm({ kind: "details" })}
+                onClick={() => openForm(null)}
               >
                 <Icon name="page" />
                 <span className="tree-text">
@@ -481,8 +489,9 @@ export function PageEditor({
                 selectedId={selected ? selected.id : null}
                 folded={folded}
                 onFold={foldRow}
-                onSelect={(id) => openForm({ kind: "component", id })}
+                onSelect={openForm}
                 onMove={moveComponent}
+                onDrag={setDragged}
                 onRemove={removeComponent}
                 onAddInside={(parentId) => setPicker({ parentId })}
               />
@@ -530,10 +539,10 @@ export function PageEditor({
                   onChange={change}
                 />
 
-                {open.kind === "list" && content.length > 0 && (
+                {!open.form && content.length > 0 && (
                   <p className={`muted ${styles.hint}`}>
                     To edit a component, choose it in the list or click it in the
-                    preview.
+                    preview. To move one, drag it by its six dots.
                   </p>
                 )}
               </>
@@ -545,16 +554,13 @@ export function PageEditor({
               <nav aria-label="Placed in">
                 <ol className={styles.trail}>
                   <li>
-                    <button type="button" onClick={() => openForm({ kind: "details" })}>
+                    <button type="button" onClick={() => openForm(null)}>
                       {pageTitle}
                     </button>
                   </li>
                   {ancestors.map((ancestor) => (
                     <li key={ancestor.id}>
-                      <button
-                        type="button"
-                        onClick={() => openForm({ kind: "component", id: ancestor.id })}
-                      >
+                      <button type="button" onClick={() => openForm(ancestor.id)}>
                         {labelOf(ancestor, definitions)}
                       </button>
                     </li>
@@ -634,8 +640,10 @@ export function PageEditor({
           <PreviewPane
             pageId={page.id}
             pageTitle={pageTitle}
-            content={content}
-            selectedId={selected ? selected.id : null}
+            content={
+              dragged ? moveInstanceTo(content, dragged.id, dragged.place) : content
+            }
+            selectedId={dragged ? dragged.id : (selected?.id ?? null)}
             onSelect={openFromPreview}
             onVisit={openPageAt}
           />

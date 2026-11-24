@@ -71,9 +71,11 @@ they do not clash with ones you may already have running.
 3. Choose the card grid in the tree, and add a card. Choose **Upload image**
    and pick any photo. It is made smaller, uploaded and shown in the preview.
 4. Drag a row of the tree above or below another, into a Section or out of
-   one. A line shows where it will go, and Esc calls it off. On a touch screen,
-   drag it by its six dots. Then choose **Undo**. The arrows and **Placed in**
-   on a component's form make the same moves without dragging.
+   one. The rest move apart to make room, the Section it would go into is
+   ringed in blue, and the preview shows the page as it would be. Let go to
+   drop it, or press Esc to call it off. On a touch screen, drag it by its six
+   dots. Then choose **Undo**. The arrows and **Placed in** on a component's
+   form make the same moves without dragging.
 5. Choose **Add inside Section** to nest a component, or **Add component** to
    add one at the top level.
 6. Change something, then open another page from the list, or by clicking the
@@ -440,12 +442,15 @@ second walk of the tree to keep in step with the first.
 
 **Dragging is pointer events, not a library.** Every place a component can go
 is an element in the list, with no height and a name made of two ids: the
-parent's and the next neighbour's. While a row is dragged, `useDragToMove`
-picks the one nearest the pointer, and letting go calls `moveInstanceTo` in
-`src/page-model/tree.ts`. A place names a neighbour, not a position number, so
-nothing has to be renumbered when the component is first taken out of where it
-was. The hook knows nothing about components, so the cards in a form use it
-too. With pointer events a mouse, a finger and a pen all work the same way, and
+parent's and the next neighbour's. While a row is dragged it is taken out of
+the list, and `useDragToMove` opens the place nearest to it, so the list always
+looks as it would after a drop. The places are measured once, when the drag
+starts, so rows that slide on screen cannot change which place is nearest.
+Letting go calls `moveInstanceTo` in `src/page-model/tree.ts`. The editor makes
+the same call during the drag, and sends the result to the preview only. A
+place names a neighbour, not a position number, so nothing has to be renumbered
+when the component is first taken out of where it was. The hook knows nothing
+about components, so the cards in a form use it too. With pointer events a mouse, a finger and a pen all work the same way, and
 a drag carries on over the preview's frame, where HTML's own drag and drop
 would not. The cost is that there is no dragging with the keyboard. The arrows
 and **Placed in** on a component's form make the same moves there.

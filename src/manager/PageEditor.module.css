@@ -149,6 +149,13 @@
   outline-offset: -2px;
 }
 
+/* A component that is being dragged would drop on the page itself, and not
+   inside another component. */
+.listPanel section:has([data-into-page]) .pageRow {
+  --row-fill: var(--focus-soft);
+  box-shadow: inset 0 0 0 2px var(--focus);
+}
+
 .outlineEmpty {
   padding: 0.25rem 0.625rem 0.625rem calc(var(--tree-edge) + 2 * var(--tree-indent));
 }
@@ -158,8 +165,13 @@
   margin-left: calc(var(--tree-edge) + var(--tree-indent));
 }
 
+/* Its icon sits in line with the handles of the rows above it. */
 .addComponent[data-variant="quiet"] {
-  padding-inline: 0.3125rem 0.625rem;
+  padding-left: calc((var(--handle-width) - 1rem) / 2 - 1px);
+}
+
+.listPanel section:has([data-dragging]) .addComponent {
+  opacity: 0.35;
 }
 
 /* Set in by a row's padding, so the fields line up with the rows of the

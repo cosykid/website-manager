@@ -28,6 +28,7 @@
 .list {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  align-content: start;
   gap: 0.5rem;
 }
 
@@ -71,7 +72,7 @@
   gap: 0.5rem;
   min-width: 0;
   min-height: 2.75rem;
-  padding: 0.375rem 0.25rem 0.375rem 0.75rem;
+  padding: 0.375rem 0.25rem;
   border: 0;
   background: transparent;
   color: inherit;
@@ -80,27 +81,24 @@
   cursor: pointer;
 }
 
-/* Six dots in the space in front of the arrow: the row can be dragged. */
+/* Six dots: the row can be dragged. */
 .entryHandle {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 0.875rem;
+  flex: none;
+  align-self: stretch;
+  width: var(--handle-width);
   color: var(--text-muted);
-  opacity: 0;
+}
+
+.entryRow:hover .entryHandle {
+  color: var(--text);
 }
 
 .entryHandle svg {
   flex: none;
   stroke-width: 3;
-}
-
-.entryRow:hover .entryHandle {
-  opacity: 1;
 }
 
 /* The focus ring goes round the whole row, buttons included. */
@@ -180,21 +178,9 @@
   visibility: hidden;
 }
 
-/* A touch screen has no pointer to hover with. There the handle and the
-   buttons always show, and take their own space at each end of the row. */
+/* A touch screen has no pointer to hover with. There the buttons always show,
+   and take their own space at the end of the row. */
 @media (hover: none) {
-  .entryHandle {
-    position: static;
-    flex: none;
-    align-self: stretch;
-    width: 2rem;
-    opacity: 1;
-  }
-
-  .entryToggle {
-    padding-left: 0.25rem;
-  }
-
   .entryActions {
     position: static;
     flex: none;
@@ -218,5 +204,10 @@
 @media (prefers-reduced-motion: no-preference) {
   .chevron {
     transition: transform 120ms;
+  }
+
+  /* Out of the way while a moved row turns from blue to its usual colour. */
+  .entryRow[data-landed] .entryActions {
+    visibility: hidden;
   }
 }

@@ -1,9 +1,6 @@
 /* The page's components as a tree, one row each. The rows themselves, the
-   indent and the guide lines are in manager.css, under "Trees". */
-
-.outline {
-  --handle-width: var(--tree-slot);
-}
+   indent and the guide lines are in manager.css, under "Trees", and what
+   happens during a drag is under "Dragging". */
 
 .list {
   margin: 0;
@@ -23,6 +20,25 @@
   outline-offset: -2px;
 }
 
+/* Six dots: the row can be dragged. */
+.handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  align-self: stretch;
+  width: var(--handle-width);
+  color: var(--text-muted);
+}
+
+.handle svg {
+  stroke-width: 3;
+}
+
+.row:hover .handle {
+  color: var(--text);
+}
+
 /* The arrow that folds a component shut. One that holds nothing has an empty
    space here, so that names at the same depth line up. */
 .fold {
@@ -31,7 +47,7 @@
   justify-content: center;
   flex: none;
   align-self: stretch;
-  width: var(--tree-slot);
+  width: 0.875rem;
   padding: 0;
   border: 0;
   border-radius: 6px;
@@ -56,38 +72,13 @@ button.fold:focus-visible {
   transform: rotate(90deg);
 }
 
-/* Holds two icons and shows one: what kind of row it is, or the six dots that
-   mean it can be dragged. */
-.handle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  align-self: stretch;
-  width: var(--handle-width);
-  color: var(--text-muted);
-}
-
-.handle svg:last-child {
-  display: none;
-  stroke-width: 3;
-}
-
-.row:hover .handle svg:first-child {
-  display: none;
-}
-
-.row:hover .handle svg:last-child {
-  display: block;
-}
-
 .select {
   display: flex;
   flex: 1;
   align-items: center;
   align-self: stretch;
   min-width: 0;
-  padding: 0 0.25rem 0 0.375rem;
+  padding: 0 0.5rem 0 0.25rem;
   border: 0;
   background: transparent;
   color: inherit;
@@ -121,16 +112,14 @@ button.fold:focus-visible {
    It floats over the end of the row, so a row at rest gives its whole width to
    its text. Its background is the row's own colour, fading in from the left,
    which hides the text under it. Only the button itself takes a click: the
-   rest lets it through to the row. */
+   rest lets it through to the row. It stays inside the row's ring. */
 .remove {
   position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
+  inset: 2px 2px 2px auto;
   display: flex;
   align-items: center;
-  padding: 0 0.1875rem 0 1.25rem;
-  border-radius: 0 var(--radius) var(--radius) 0;
+  padding-left: 1.25rem;
+  border-radius: 0 6px 6px 0;
   background: linear-gradient(to right, transparent, var(--row-fill) 1.25rem);
   opacity: 0;
   pointer-events: none;
@@ -145,21 +134,9 @@ button.fold:focus-visible {
   opacity: 1;
 }
 
-/* A touch screen has no pointer to hover with. There the handle and the
-   button always show, and take their own space in the row. */
+/* A touch screen has no pointer to hover with. There the button always shows,
+   and takes its own space in the row. */
 @media (hover: none) {
-  .outline {
-    --handle-width: 2rem;
-  }
-
-  .handle svg:first-child {
-    display: none;
-  }
-
-  .handle svg:last-child {
-    display: block;
-  }
-
   .remove {
     position: static;
     flex: none;
@@ -171,7 +148,7 @@ button.fold:focus-visible {
 
 /* The last line inside a component: somewhere to put another one. */
 .addInside {
-  gap: 0.375rem;
+  gap: 0.25rem;
   width: 100%;
   border: 0;
   color: var(--text-muted);
@@ -185,7 +162,6 @@ button.fold:focus-visible {
 .addInside svg {
   flex: none;
   width: var(--handle-width);
-  margin-left: var(--tree-slot);
 }
 
 .addInside:hover {
@@ -198,38 +174,59 @@ button.fold:focus-visible {
 
 /* ---------- Dragging ---------- */
 
-/* The line and the label are in manager.css, under "Dragging". */
+/* Nothing but the rows and the room between them matters now. The button keeps
+   its place, as a row must not change its height during a drag. */
+.outline[data-dragging] .remove {
+  visibility: hidden;
+}
 
-/* The gap inside a folded row is half way down it, and the row itself shows
-   that it is the target. */
+.outline[data-dragging] .addInside {
+  opacity: 0.35;
+}
+
+.outline[data-dragging] .row[data-selected] {
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+/* A gap starts as far in as what goes into it. */
+.outline [data-gap] {
+  margin-left: calc(var(--tree-edge) + var(--depth) * var(--tree-indent));
+}
+
+/* The one inside a folded row is half way down it, and one step further in. */
 .row > [data-gap] {
   position: absolute;
-  top: 50%;
+  inset: 50% 0 auto var(--tree-indent);
+  margin: 0;
 }
 
-.row > [data-gap]::before,
-.row > [data-gap]::after {
-  display: none;
+/* The component a drag would drop into lights up, and a ring goes round it and
+   all that it holds. */
+.outline [data-receiving] {
+  position: relative;
 }
 
-/* The component that would take in what is being dragged. The ring starts as
-   far in as the component does. */
-.row[data-receiving]::after {
+.outline [data-receiving] > .row {
+  --row-fill: var(--focus-soft);
+}
+
+.outline [data-receiving]::after {
   content: "";
   position: absolute;
-  inset: 0;
-  left: calc(var(--tree-edge) + var(--depth) * var(--tree-indent) - 0.125rem);
-  border: 2px solid var(--text);
-  border-radius: var(--radius);
+  inset: -1px -3px;
+  left: calc(var(--tree-edge) + var(--depth) * var(--tree-indent) - 3px);
+  border: 2px solid var(--focus);
+  border-radius: calc(var(--radius) + 2px);
   pointer-events: none;
-}
-
-.outline[data-dragging] .remove {
-  display: none;
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .fold svg {
     transition: transform 120ms;
+  }
+
+  /* Out of the way while a dropped row turns from blue to its usual colour. */
+  .row[data-landed] .remove {
+    visibility: hidden;
   }
 }
