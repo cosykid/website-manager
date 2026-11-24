@@ -51,8 +51,8 @@ export function CreatePageForm({ siteId }: { siteId: string }) {
   }
 
   return (
-    <form className="panel form-panel" onSubmit={handleSubmit} noValidate>
-      <h2>Create a page</h2>
+    <form className="new-page" onSubmit={handleSubmit} noValidate>
+      <h2 className="section-heading">New page</h2>
 
       <div className="form-grid">
         <div className="field">
@@ -82,7 +82,7 @@ export function CreatePageForm({ siteId }: { siteId: string }) {
           </label>
           <input
             id="new-page-path"
-            className="input data"
+            className="input"
             value={path}
             onChange={(event) => {
               setPath(event.target.value);
@@ -117,7 +117,7 @@ export function CreatePageForm({ siteId }: { siteId: string }) {
       )}
 
       <div>
-        <button className="button" data-variant="primary" disabled={creating}>
+        <button className="button" disabled={creating}>
           {creating ? "Creating page…" : "Create page"}
         </button>
       </div>

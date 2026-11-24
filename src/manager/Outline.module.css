@@ -1,5 +1,5 @@
-/* The outline reads like a team sheet: a position number, the component's
-   name, then a short note. */
+/* The page's components, one row each. What a section holds is indented
+   under it. */
 
 .list {
   margin: 0;
@@ -7,22 +7,31 @@
   list-style: none;
 }
 
+/* --row-fill is the row's background right now. The buttons at the end of the
+   row use it too, so they can cover the text under them. */
 .row {
+  --row-fill: transparent;
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 0.25rem;
-  padding-right: 0.25rem;
   border-radius: var(--radius);
+  background: var(--row-fill);
 }
 
-.row:hover {
-  background: var(--surface);
+.row:hover,
+.row:focus-within {
+  --row-fill: var(--hover);
 }
 
-/* The selected row is marked by a bar and bolder text, not by colour alone. */
+/* The picked row is filled and bolder: two signs, not colour alone. */
 .row[data-selected] {
-  background: var(--accent-soft);
-  box-shadow: inset 3px 0 0 var(--accent);
+  --row-fill: var(--selected);
+}
+
+/* The focus ring goes round the whole row, buttons included. */
+.row:has(.select:focus-visible) {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
 }
 
 .select {
@@ -31,8 +40,8 @@
   align-items: baseline;
   gap: 0.5rem;
   min-width: 0;
-  min-height: max(2.5rem, var(--control-height));
-  padding: 0.375rem 0.25rem 0.375rem 0.625rem;
+  min-height: max(2.25rem, var(--control-height));
+  padding: 0.4375rem 0.25rem 0.4375rem 0.625rem;
   border: 0;
   border-radius: var(--radius);
   background: transparent;
@@ -42,58 +51,70 @@
   cursor: pointer;
 }
 
-.number {
-  flex: none;
-  min-width: 1.25rem;
-  color: var(--text-muted);
-  font-family: var(--font-data);
-  font-size: 0.8125rem;
-  font-variant-numeric: tabular-nums;
-}
-
-/* The name and its note share a line when there is room, and stack when
-   there isn't. */
-.text {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0 0.625rem;
-  min-width: 0;
+.select:focus-visible {
+  outline: none;
 }
 
 .label {
-  font-weight: 600;
+  flex: none;
+  font-weight: 550;
 }
 
 .row[data-selected] .label {
-  font-weight: 700;
+  font-weight: 650;
 }
 
+/* The note beside the name stays on one line. The form shows it in full. */
 .summary {
   min-width: 0;
+  overflow: hidden;
   color: var(--text-muted);
   font-size: 0.875rem;
-  overflow-wrap: anywhere;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.problems {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  color: var(--danger);
-  font-size: 0.8125rem;
-  font-weight: 600;
-}
+/* Move up, move down and remove. They are always there for the keyboard and
+   for screen readers, but only drawn where they are wanted: on a row under
+   the pointer or holding keyboard focus.
 
+   They float over the end of the row, so a row at rest gives its whole width
+   to its text. Their background is the row's own colour, fading in from the
+   left, which hides the text under them. */
 .actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
-  flex: none;
+  align-items: center;
+  padding: 0 0.1875rem 0 1.25rem;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: linear-gradient(to right, transparent, var(--row-fill) 1.25rem);
+  opacity: 0;
+}
+
+.row:hover .actions,
+.row:focus-within .actions {
+  opacity: 1;
+}
+
+/* A touch screen has no pointer to hover with. There the buttons always
+   show, and take their own space at the end of the row. */
+@media (hover: none) {
+  .actions {
+    position: static;
+    flex: none;
+    padding-left: 0;
+    background: none;
+    opacity: 1;
+  }
 }
 
 /* What a container holds sits indented under it, joined by a guide line. */
 .children {
   margin-left: 1rem;
-  padding-left: 0.5rem;
+  padding-left: 0.375rem;
   border-left: 1px solid var(--border);
 }
 
@@ -101,19 +122,19 @@
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  min-height: var(--control-height);
-  margin-left: 0.25rem;
+  min-height: max(2rem, var(--control-height));
   padding: 0 0.625rem;
   border: 0;
   border-radius: var(--radius);
   background: transparent;
-  color: var(--accent);
+  color: var(--text-muted);
   font: inherit;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 550;
   cursor: pointer;
 }
 
 .addInside:hover {
-  background: var(--accent-soft);
+  background: var(--hover);
+  color: var(--text);
 }

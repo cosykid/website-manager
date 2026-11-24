@@ -28,7 +28,15 @@ export default async function EditPagePage({ params }: Props) {
 
   return (
     <PageEditor
-      site={{ id: site.id, name: site.name }}
+      site={{
+        id: site.id,
+        name: site.name,
+        colors: {
+          brand: site.theme.colors.brand,
+          accent: site.theme.colors.accent,
+          surface: site.theme.colors.surface,
+        },
+      }}
       siteOrigin={await getSiteOrigin(site)}
       page={{
         id: page.id,

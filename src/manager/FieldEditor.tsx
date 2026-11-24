@@ -328,7 +328,7 @@ function ListEditor({
             const panelId = `${shared.idPrefix}-${entryPath}-panel`;
 
             return (
-              <li key={index} className={styles.entry}>
+              <li key={index} className={styles.entry} data-open={isOpen || undefined}>
                 <div className={styles.entryRow}>
                   <button
                     type="button"
@@ -337,23 +337,26 @@ function ListEditor({
                     aria-controls={isOpen ? panelId : undefined}
                     onClick={() => setOpenIndex(isOpen ? null : index)}
                   >
-                    {/* The spaces keep the parts apart when a screen reader
-                        reads the button out: "1 Tessa Whitlock". */}
-                    <span className={styles.entryNumber}>{index + 1}</span>{" "}
+                    <span className={styles.chevron} data-open={isOpen || undefined}>
+                      <Icon name="next" size={14} />
+                    </span>
+                    {/* The position is read out by screen readers, to tell
+                        two entries with the same name apart. The spaces keep
+                        the parts apart: "1 Tessa Whitlock". */}
+                    <span className="visually-hidden">{index + 1}</span>{" "}
                     <span className={styles.entryTitle} data-untitled={!title || undefined}>
                       {title || `Untitled ${field.itemLabel}`}
                     </span>{" "}
                     {problems > 0 && (
-                      <span className={styles.problems}>
+                      <span className="problem-count">
                         <Icon name="problem" size={14} />
                         {problems} {problems === 1 ? "problem" : "problems"}
                       </span>
                     )}
-                    <span className={styles.chevron} data-open={isOpen || undefined}>
-                      <Icon name="expand" />
-                    </span>
                   </button>
 
+                  {/* Shown for the open entry, and for an entry under the
+                      pointer or holding keyboard focus: see .entryActions. */}
                   <div className={styles.entryActions}>
                     <button
                       type="button"

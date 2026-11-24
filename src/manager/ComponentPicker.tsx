@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import type { ComponentDefinition } from "@/library/types";
-import { Icon } from "./Icon";
 import styles from "./ComponentPicker.module.css";
 
 type ComponentPickerProps = {
@@ -51,7 +50,9 @@ export function ComponentPicker({
       }}
     >
       <div className={styles.content}>
-        <h2 id="component-picker-title">Add a component to {destination}</h2>
+        <h2 id="component-picker-title" className={styles.title}>
+          Add a component to {destination}
+        </h2>
 
         <ul className={styles.choices}>
           {Object.values(definitions).map((definition) => (
@@ -61,21 +62,18 @@ export function ComponentPicker({
                 className={styles.choice}
                 onClick={() => onPick(definition.type)}
               >
-                <span className={styles.choiceText}>
-                  {/* The space keeps the name and description apart when a
-                      screen reader reads the button out. */}
-                  <span className={styles.choiceLabel}>{definition.label}</span>{" "}
-                  <span className={styles.choiceDescription}>
-                    {definition.description}
-                  </span>
+                {/* The space keeps the name and description apart when a
+                    screen reader reads the button out. */}
+                <span className={styles.choiceLabel}>{definition.label}</span>{" "}
+                <span className={styles.choiceDescription}>
+                  {definition.description}
                 </span>
-                <Icon name="add" />
               </button>
             </li>
           ))}
         </ul>
 
-        <div>
+        <div className={styles.footer}>
           <button type="button" className="button" onClick={onClose}>
             Cancel
           </button>

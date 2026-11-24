@@ -6,6 +6,7 @@ import { getSite } from "@/db/sites";
 import { CreatePageForm } from "@/manager/CreatePageForm";
 import { Icon } from "@/manager/Icon";
 import { getSiteOrigin } from "@/manager/site-origin";
+import { SiteMark } from "@/manager/SiteMark";
 
 type Props = PageProps<"/sites/[siteId]">;
 
@@ -34,16 +35,18 @@ export default async function SitePagesPage({ params }: Props) {
   return (
     <main className="page">
       <div className="page-header">
-        <div>
+        <div className="page-heading">
           <nav aria-label="Breadcrumb">
             <ol className="breadcrumbs">
               <li>
                 <Link href="/">Sites</Link>
               </li>
-              <li aria-current="page">{site.name}</li>
             </ol>
           </nav>
-          <h1>{site.name}</h1>
+          <h1 className="site-title">
+            <SiteMark colors={site.theme.colors} />
+            {site.name}
+          </h1>
         </div>
         <a className="button" href={origin} target="_blank" rel="noreferrer">
           View site
@@ -52,8 +55,8 @@ export default async function SitePagesPage({ params }: Props) {
         </a>
       </div>
 
-      <section aria-labelledby="pages-heading" className="panel">
-        <h2 id="pages-heading" className="visually-hidden">
+      <section aria-labelledby="pages-heading">
+        <h2 id="pages-heading" className="section-heading">
           Pages
         </h2>
         {pages.length === 0 ? (
@@ -65,34 +68,37 @@ export default async function SitePagesPage({ params }: Props) {
             {pages.map((page) => (
               <li key={page.id} className="row">
                 <div className="row-main">
-                  <h3 className="row-title">{page.title}</h3>
-                  <p className="muted">
-                    <span className="data">{page.path}</span>
-                    {" · "}
-                    Saved {updatedFormat.format(page.updatedAt)}
-                  </p>
+                  <h3 className="row-title">
+                    {/* The whole row is this link: see .row-link in manager.css. */}
+                    <Link
+                      className="row-link"
+                      href={`/sites/${site.id}/pages/${page.id}`}
+                    >
+                      {page.title}
+                      <span className="visually-hidden">: edit page</span>
+                    </Link>
+                  </h3>
+                  <p className="muted">{page.path}</p>
                 </div>
 
-                <div className="row-actions">
-                  <a
-                    className="button"
-                    data-variant="quiet"
-                    href={`${origin}${page.path}`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    View page
-                    <span className="visually-hidden"> {page.title} in a new tab</span>
-                    <Icon name="open" />
-                  </a>
-                  <Link
-                    className="button"
-                    href={`/sites/${site.id}/pages/${page.id}`}
-                  >
-                    Edit page
-                    <span className="visually-hidden"> {page.title}</span>
-                  </Link>
-                </div>
+                <p className="row-meta">
+                  Saved {updatedFormat.format(page.updatedAt)}
+                </p>
+
+                <a
+                  className="row-action"
+                  href={`${origin}${page.path}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  View page
+                  <span className="visually-hidden"> {page.title} in a new tab</span>
+                  <Icon name="open" size={14} />
+                </a>
+
+                <span className="row-chevron">
+                  <Icon name="next" />
+                </span>
               </li>
             ))}
           </ul>

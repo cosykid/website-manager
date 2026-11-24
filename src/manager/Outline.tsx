@@ -7,11 +7,15 @@ import { Icon } from "./Icon";
 import styles from "./Outline.module.css";
 
 /**
- * The page as a numbered outline, in the order visitors will see it.
+ * The page's components as a list, in the order visitors will see them.
  *
  * It is the same tree the page JSON holds: a component that can contain
- * others shows them indented beneath it, by rendering this outline again for
+ * others shows them indented beneath it, by rendering this list again for
  * its children.
+ *
+ * Each row has a position number (1, 2, 2.1) that only screen readers read
+ * out. It gives every row and button its own name, such as "Move Section 2
+ * up", where the eye has the indent to go by.
  */
 
 type OutlineProps = {
@@ -62,19 +66,20 @@ export function Outline(props: OutlineProps) {
               >
                 {/* The spaces keep the parts apart when a screen reader reads
                     the button out: "1.1 Card grid Meet the squad". */}
-                <span className={styles.number}>{number}</span>{" "}
-                <span className={styles.text}>
-                  <span className={styles.label}>{label}</span>{" "}
-                  {summary && <span className={styles.summary}>{summary}</span>}{" "}
-                  {problems > 0 && (
-                    <span className={styles.problems}>
-                      <Icon name="problem" size={14} />
-                      {problems} {problems === 1 ? "problem" : "problems"}
-                    </span>
-                  )}
-                </span>
+                <span className="visually-hidden">{number}</span>{" "}
+                <span className={styles.label}>{label}</span>{" "}
+                {summary && <span className={styles.summary}>{summary}</span>}{" "}
+                {problems > 0 && (
+                  <span className="problem-count">
+                    <Icon name="problem" size={14} />
+                    {problems} {problems === 1 ? "problem" : "problems"}
+                  </span>
+                )}
               </button>
 
+              {/* Drawn only for a row under the pointer or holding keyboard
+                  focus, and always on a touch screen: see .actions in the
+                  stylesheet. */}
               <div className={styles.actions}>
                 <button
                   type="button"

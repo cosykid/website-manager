@@ -20,12 +20,9 @@ export default function ManagerLayout({ children }: LayoutProps<"/">) {
     <html lang="en">
       <body>
         <header className="top-bar">
-          <div className="top-bar-inner">
-            <Link className="wordmark" href="/">
-              <span className="wordmark-mark" aria-hidden="true" />
-              Website manager
-            </Link>
-          </div>
+          <Link className="wordmark" href="/">
+            Website manager
+          </Link>
         </header>
         {children}
       </body>

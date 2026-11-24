@@ -59,11 +59,12 @@ MongoDB you may already have running.
 
 ### Things to try
 
-1. In the manager, open **Ironbarks**, then **Edit page** on Home.
-2. Select the card grid in the outline, add a card, and choose **Save page**.
-   **View page** opens the live page with the new card.
+1. In the manager, open **Ironbarks**, then **Home**.
+2. Select the card grid in the list on the left, add a card, and choose
+   **Save page**. **View page** opens the live page with the new card.
 3. Choose **Add inside Section** to nest a component, or **Add component** to
-   add one at the top level. Remove one, then choose **Undo**.
+   add one at the top level. Point at a row to see its move and remove
+   buttons. Remove one, then choose **Undo**.
 4. Save with a required field empty to see where problems are reported.
 5. Create a page on Harbour Sevens. The same components appear in that
    site's colours, type and corner shapes.
@@ -396,11 +397,14 @@ describes what it does instead.
 offers Undo until the next change. Nothing in the manager is irreversible
 until Save page, and the editor warns before leaving with unsaved changes.
 
-**Design.** The manager is a quiet tool in system type that follows the
-reader's light or dark setting. Controls are at least 44px tall on touch
+**Design.** The manager is black and white in system type and follows the
+reader's light or dark setting. It has no colour of its own: the only colour
+on screen is each site's, shown as a small mark beside its name, so the two
+sites carry the personality. Sites and pages are plain lists, and the editor
+has two sides: what the page holds on the left, and one form on the right
+for whatever is picked there. Controls are at least 44px tall on touch
 screens, every text pairing measures 5.4:1 or better, and problems are shown
-with an icon and words, never colour alone. The two sites carry the
-personality.
+with an icon and words, never colour alone.
 
 ## What is not built
 
