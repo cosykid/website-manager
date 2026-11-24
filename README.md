@@ -97,7 +97,8 @@ MongoDB you may already have running.
 | `src/app/(manager)` | Manager routes. |
 | `src/app/(sites)` | The one public route. |
 | `src/proxy.ts` | Sends each hostname to the manager or to a site. |
-| `seed/`, `scripts/seed.ts` | The two demo sites and their pages as JSON, and the script that loads them. |
+| `seed/`, `scripts/seed.ts` | The two demo sites and their pages as JSON, and the script that checks and loads them. |
+| `docs/page-json.md` | A guide to writing page JSON by hand. |
 
 One rule keeps the two halves apart: **the manager never imports a React
 component from the library, and nothing outside `src/manager` imports from
@@ -108,8 +109,12 @@ be deleted, or deployed separately, and stored pages would still render.
 
 ## The page JSON format
 
-A page is a tree of component instances. The types are in
-`src/page-model/types.ts`:
+A page is a tree of component instances. This section is the short version.
+[docs/page-json.md](docs/page-json.md) is the full guide to writing a page
+by hand: every component and prop, the rules each value follows, how to load
+a file, and what each error message means.
+
+The types are in `src/page-model/types.ts`:
 
 ```ts
 type ComponentInstance = {
@@ -276,9 +281,14 @@ and renders on every site. For a component that holds others, set
 1. Add a field to the component's `definition.ts`.
 2. Add the prop to the component's props type and use it in the JSX.
 
-Pages saved before the prop existed need no migration. When a page is
-rendered or opened in the editor, `fillGroup` gives every missing prop its
+Pages saved before an optional prop existed need no migration. When a page
+is rendered or opened in the editor, `fillGroup` gives every missing prop its
 empty value: `""` for text, the `default` for a select, `[]` for a list.
+
+A new `required` text or address is different. Its empty value fails the
+check, so every instance saved before it is left off the public page until an
+editor fills it in. On a component that pages already use, add a new prop as
+optional.
 
 ### Add a new kind of field
 
@@ -423,8 +433,9 @@ _To fill in before submitting._
 _To review and complete before submitting._
 
 - **Claude Code** (Anthropic's coding agent, model Claude Fable 5.2). It
-  compared approaches with me, then wrote the code, tests, seed content and
-  the first draft of this README, and tested the app in a browser. I set the
+  compared approaches with me, then wrote the code, tests, seed content, the
+  page JSON guide in `docs/` and the first draft of this README, and tested
+  the app in a browser. I set the
   direction and made the calls, for example choosing a plain field format
   over Zod so that I could read and explain every line.
 - `AGENTS.md` is written by Next.js 16's dev server for coding agents. It is
