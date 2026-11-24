@@ -13,9 +13,10 @@ import styles from "./Outline.module.css";
  * others shows them indented beneath it, by rendering this list again for
  * its children.
  *
- * Each row has a position number (1, 2, 2.1) that only screen readers read
- * out. It gives every row and button its own name, such as "Move Section 2
- * up", where the eye has the indent to go by.
+ * Choosing a row opens that component's form. Each row has a position
+ * number (1, 2, 2.1) that only screen readers read out. It gives every row
+ * and button its own name, such as "Move Section 2 up", where the eye has
+ * the indent to go by.
  */
 
 type OutlineProps = {
@@ -26,7 +27,6 @@ type OutlineProps = {
    */
   parentNumber?: string;
   definitions: Record<string, ComponentDefinition>;
-  selectedId: string | null;
   issues: IssuesByInstance;
   onSelect: (id: string) => void;
   onMove: (id: string, direction: "up" | "down") => void;
@@ -35,8 +35,16 @@ type OutlineProps = {
   onAddInside: (parentId: string) => void;
 };
 
+/**
+ * The HTML id of a component's row. The editor uses it to put keyboard focus
+ * back on the row after the component's form is closed.
+ */
+export function rowId(instanceId: string): string {
+  return `row-${instanceId}`;
+}
+
 export function Outline(props: OutlineProps) {
-  const { nodes, parentNumber, definitions, selectedId, issues } = props;
+  const { nodes, parentNumber, definitions, issues } = props;
   if (nodes.length === 0) return null;
 
   return (
@@ -45,7 +53,6 @@ export function Outline(props: OutlineProps) {
         const definition = definitions[node.type];
         const label = definition?.label ?? "Unknown component";
         const summary = definition ? summaryOf(node, definition) : node.type;
-        const isSelected = node.id === selectedId;
         const problems = issues[node.id]?.length ?? 0;
 
         // 1, 2, 3 at the top of the page; 2.1, 2.2 inside component 2.
@@ -57,11 +64,11 @@ export function Outline(props: OutlineProps) {
 
         return (
           <li key={node.id}>
-            <div className={styles.row} data-selected={isSelected || undefined}>
+            <div className={styles.row}>
               <button
                 type="button"
+                id={rowId(node.id)}
                 className={styles.select}
-                aria-current={isSelected ? "true" : undefined}
                 onClick={() => props.onSelect(node.id)}
               >
                 {/* The spaces keep the parts apart when a screen reader reads

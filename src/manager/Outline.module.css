@@ -23,11 +23,6 @@
   --row-fill: var(--hover);
 }
 
-/* The picked row is filled and bolder: two signs, not colour alone. */
-.row[data-selected] {
-  --row-fill: var(--selected);
-}
-
 /* The focus ring goes round the whole row, buttons included. */
 .row:has(.select:focus-visible) {
   outline: 2px solid var(--focus);
@@ -58,10 +53,6 @@
 .label {
   flex: none;
   font-weight: 550;
-}
-
-.row[data-selected] .label {
-  font-weight: 650;
 }
 
 /* The note beside the name stays on one line. The form shows it in full. */

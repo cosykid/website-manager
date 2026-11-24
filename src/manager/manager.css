@@ -208,6 +208,37 @@ a:hover {
   cursor: not-allowed;
 }
 
+/* A choice between a few views, one of which is always on. The chosen one is
+   filled and bolder: two signs, not colour alone. */
+.segmented {
+  display: inline-flex;
+  gap: 0.125rem;
+}
+
+.segmented button {
+  min-width: 4.75rem;
+  min-height: var(--control-height);
+  padding: 0 0.75rem;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-weight: 550;
+  cursor: pointer;
+}
+
+.segmented button:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.segmented button[aria-pressed="true"] {
+  background: var(--selected);
+  color: var(--text);
+  font-weight: 650;
+}
+
 .icon-button {
   display: inline-flex;
   align-items: center;

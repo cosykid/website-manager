@@ -1,0 +1,63 @@
+/* Styles for the editor's preview only. The public pages never load them. */
+
+/* Wraps one component. It makes no box of its own, so the page is laid out
+   exactly as the public one is: a wrapped component is still the grid item
+   of the Section around it. */
+.instance {
+  display: contents;
+}
+
+/* The wrapper has no box, so the pointer and the rings go on what it holds.
+   A ring is drawn a little outside the component, clear of its text. */
+.instance > * {
+  --ring-offset: 6px;
+  cursor: pointer;
+}
+
+/* Two kinds of component get their ring just inside the edge instead. One
+   placed straight on the page is as wide as the window, so a ring outside it
+   would be cut off. One with a background of its own (a surface) takes its
+   ring colour from its own text, which may not show on what is around it. */
+:global(#content) > .instance > *,
+.instance > [data-surface] {
+  --ring-offset: -3px;
+}
+
+/* The component under the pointer: the innermost one, not the Sections
+   around it. */
+.instance:hover:not([data-selected]):not(:has(.instance:hover)) > * {
+  outline: 2px dashed color-mix(in srgb, currentColor 55%, transparent);
+  outline-offset: var(--ring-offset);
+}
+
+/* The component whose form is open in the editor. The ring takes the text
+   colour of the surface it is on, as the site's own focus ring does, so it
+   shows on every site's colours. */
+.instance[data-selected] > * {
+  outline: 3px solid currentColor;
+  outline-offset: var(--ring-offset);
+}
+
+/* Stands in for something that cannot be drawn: a component with a required
+   field still empty, or a Section with nothing in it. */
+.note {
+  margin: 0;
+  padding: 1rem 1.25rem;
+  border: 2px dashed color-mix(in srgb, currentColor 40%, transparent);
+  border-radius: var(--radius-card);
+  font-size: 1rem;
+}
+
+/* A note placed straight on the page, outside any Section, keeps clear of
+   the window's edges. */
+:global(#content) > .instance > .note {
+  margin: 1rem clamp(1rem, 4vw, 2rem);
+}
+
+/* Shown in place of the page when it has no components yet. */
+.empty {
+  max-width: 72rem;
+  margin-inline: auto;
+  padding: clamp(3rem, 10vw, 6rem) clamp(1rem, 4vw, 2rem);
+  color: var(--color-text-muted);
+}

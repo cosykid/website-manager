@@ -11,6 +11,7 @@ const paths = {
   open: "M7 17 17 7M8 7h9v9",
   problem: "M12 8v5M12 16.5v.5M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18",
   next: "m9 6 6 6-6 6",
+  back: "m15 6-6 6 6 6",
 } as const;
 
 type IconProps = {

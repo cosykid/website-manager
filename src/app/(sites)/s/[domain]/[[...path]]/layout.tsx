@@ -1,8 +1,7 @@
 import { getSiteByDomain } from "@/db/sites";
 import { pathFromSegments } from "@/renderer/path";
-import { SiteFooter, SiteHeader } from "@/renderer/SiteChrome";
+import { SiteDocument } from "@/renderer/SiteDocument";
 import "@/renderer/site.css";
-import { themeToCssVariables } from "@/site/theme-css";
 
 /**
  * The frame around every public page: the site's theme, header and footer.
@@ -30,15 +29,8 @@ export default async function SiteLayout({
   }
 
   return (
-    <html lang="en">
-      <body style={themeToCssVariables(site.theme)}>
-        <a className="skip-link" href="#content">
-          Skip to content
-        </a>
-        <SiteHeader site={site} currentPath={pathFromSegments(path)} />
-        <main id="content">{children}</main>
-        <SiteFooter site={site} />
-      </body>
-    </html>
+    <SiteDocument site={site} currentPath={pathFromSegments(path)}>
+      {children}
+    </SiteDocument>
   );
 }

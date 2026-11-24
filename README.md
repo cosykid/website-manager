@@ -59,16 +59,20 @@ MongoDB you may already have running.
 
 ### Things to try
 
-1. In the manager, open **Ironbarks**, then **Home**.
-2. Select the card grid in the list on the left, add a card, and choose
-   **Save page**. **View page** opens the live page with the new card.
-3. Choose **Add inside Section** to nest a component, or **Add component** to
+1. In the manager, open **Ironbarks**, then **Home**. The right side is a
+   live preview: the page as visitors will see it.
+2. Click the big heading in the preview. Its form opens on the left. Change
+   the heading and the preview follows as you type. Nothing is public until
+   **Save page**; **View page** opens the live page in a new tab.
+3. Choose **Back**, open the card grid from the list, and add a card.
+4. Choose **Add inside Section** to nest a component, or **Add component** to
    add one at the top level. Point at a row to see its move and remove
    buttons. Remove one, then choose **Undo**.
-4. Save with a required field empty to see where problems are reported.
-5. Create a page on Harbour Sevens. The same components appear in that
+5. Switch the preview to **Phone** to see the page at a phone's width.
+6. Save with a required field empty to see where problems are reported.
+7. Create a page on Harbour Sevens. The same components appear in that
    site's colours, type and corner shapes.
-6. Visit a path that does not exist, such as
+8. Visit a path that does not exist, such as
    http://ironbarks.localhost:3000/nope. It answers with HTTP 404, as does a
    path that exists only on the other site.
 
@@ -89,14 +93,14 @@ MongoDB you may already have running.
 
 | Folder | What is in it |
 | --- | --- |
-| `src/page-model` | The page JSON: its types, pure functions that edit the tree, and shape checks. No React, no database. |
+| `src/page-model` | The page JSON: its types, pure functions that edit the tree, and shape checks. Also the two messages the editor and its preview exchange. No React, no database. |
 | `src/library` | The shared components. Each has a definition (data) and a React component. `primitives/` holds Button, Heading and Image. `validate.ts` checks values against definitions. |
 | `src/site` | The Site and Theme types, theme to CSS variables, and the contrast check. |
 | `src/db` | The MongoDB connection and every query. |
-| `src/renderer` | `RenderTree`, the site header and footer, and the styles shared by all sites. |
-| `src/manager` | The manager's screens: page editor, outline, generated forms, component picker, server actions. |
+| `src/renderer` | `RenderTree`, the site header and footer, and the styles shared by all sites. `preview/` is the page the editor shows in its preview frame. |
+| `src/manager` | The manager's screens: page editor, outline, generated forms, preview pane, component picker, server actions. |
 | `src/app/(manager)` | Manager routes. |
-| `src/app/(sites)` | The one public route. |
+| `src/app/(sites)` | The one public route, and the preview route the editor frames. |
 | `src/proxy.ts` | Sends each hostname to the manager or to a site. |
 | `seed/`, `scripts/seed.ts` | The two demo sites and their pages as JSON, and the script that checks and loads them. |
 | `docs/page-json.md` | A guide to writing page JSON by hand. |
@@ -107,6 +111,10 @@ it.** The manager only reads definitions, which are plain data. The public
 route imports only `renderer`, `library`, `site`, `db` and `page-model`. That
 is what "renderable without the manager" means here: the manager's code could
 be deleted, or deployed separately, and stored pages would still render.
+
+The editor's live preview keeps to the rule. It is a page in the renderer's
+half, shown in a frame. The manager knows its address and two kinds of
+message, and still imports no component.
 
 ## The page JSON format
 
@@ -351,6 +359,18 @@ has changed since.
 move and attach problems to, and it would let a later version save single
 changes.
 
+**The live preview is the real page, in a frame.** The editor frames
+`/preview/<page id>`, a route in the renderer's half that draws the page in
+the site's own document, with its theme and components. On every edit the
+editor sends the unsaved tree with `postMessage`, and the preview answers
+with the id of a component that was clicked. A frame keeps the site's CSS out
+of the manager, and gives the page a width of its own to respond to, which is
+how the Phone size works. A draft is never written to the database, so it
+cannot reach the public site. `PreviewTree` wraps each instance to carry its
+id, and shares `resolveInstance` with `RenderTree`, so both decide in the
+same way what can be drawn. The cost is a second document to load, and a
+second walk of the tree to keep in step with the first.
+
 **Stored JSON is never trusted.** The server action checks the shape of the
 tree, then every prop against its definition, and stores only what the
 definitions describe. The renderer checks again and skips an instance it
@@ -401,22 +421,25 @@ until Save page, and the editor warns before leaving with unsaved changes.
 reader's light or dark setting. It has no colour of its own: the only colour
 on screen is each site's, shown as a small mark beside its name, so the two
 sites carry the personality. Sites and pages are plain lists, and the editor
-has two sides: what the page holds on the left, and one form on the right
-for whatever is picked there. Controls are at least 44px tall on touch
-screens, every text pairing measures 5.4:1 or better, and problems are shown
-with an icon and words, never colour alone.
+has two sides: on the left a list of what the page holds, which opens one
+form at a time, and on the right the live preview. Controls are at least
+44px tall on touch screens, every text pairing measures 5.4:1 or better, and
+problems are shown with an icon and words, never colour alone.
 
 ## What is not built
 
 - **Sign-in.** The brief says none is needed. Anyone who can reach the
   manager can edit. The server actions are where a check would go.
-- **Stretch goals not done:** deploying to Vercel, a data-driven component,
-  live preview and draft/publish. Save page publishes straight away, and the
-  editor says so.
+- **Stretch goal done:** live preview. The editor shows the page as it is
+  edited, at desktop and phone widths, and a click on the preview opens that
+  component's form.
+- **Stretch goals not done:** deploying to Vercel, a data-driven component
+  and draft/publish. Save page publishes straight away, and the editor says
+  so.
 - **Stretch goals partly done:** reordering (move up and move down for
-  components and for list entries, no drag and drop) and tests (36 unit tests
-  on the page tree, validation, page details and contrast; none that render
-  components or drive a browser).
+  components and for list entries, no drag and drop) and tests (39 unit tests
+  on the page tree, validation, page details, preview messages and contrast;
+  none that render components or drive a browser).
 - Deleting a page, editing a site or its theme in the manager, and uploading
   images. Images are addresses.
 - Each theme has one appearance. A site does not follow the visitor's light

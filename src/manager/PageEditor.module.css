@@ -1,5 +1,5 @@
-/* The editor: a toolbar, then the page's structure on the left and one form
-   on the right. Whatever is picked on the left is what the form edits. */
+/* The editor: a toolbar, then two sides. The left lists what can be edited
+   and opens one form at a time. The right is the live preview. */
 
 .toolbar {
   z-index: 1;
@@ -83,21 +83,28 @@
   flex: none;
 }
 
+/* "Edit" or "Preview", for a screen too narrow to show both sides at once. */
+.sides {
+  display: flex;
+  padding: 0.375rem calc(var(--gutter) - 0.75rem);
+  border-bottom: 1px solid var(--border);
+}
+
 .columns {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
 }
 
-/* The left side: the page details, then the page's components in order. The
-   side padding is the gutter less a row's own padding, so the text in a row
-   lines up with the toolbar above. */
-.side {
+/* The left side: the list, or the one form that is open. The side padding is
+   the gutter less a row's own padding, so the text in a row lines up with
+   the toolbar above. The space at the bottom keeps the last control clear of
+   the "Undo" notice. */
+.panel {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-content: start;
   gap: 1rem;
-  padding: 0.875rem calc(var(--gutter) - 0.625rem) 1.5rem;
-  border-bottom: 1px solid var(--border);
+  padding: 0.875rem calc(var(--gutter) - 0.625rem) 5.5rem;
 }
 
 .outline {
@@ -116,7 +123,7 @@
   padding-block: 0.25rem 0.5rem;
 }
 
-/* "Page details" is picked like a component, so it looks like a row. */
+/* "Page details" opens a form like a component does, so it looks like a row. */
 .detailsRow {
   display: flex;
   align-items: center;
@@ -139,27 +146,24 @@
   background: var(--hover);
 }
 
-/* The picked row is filled and bolder: two signs, not colour alone. */
-.detailsRow[aria-current] {
-  background: var(--selected);
-  font-weight: 650;
-}
-
 .detailsRow:focus-visible {
   outline-offset: -2px;
 }
 
-/* The right side: the form for whatever is picked on the left. */
-.detail {
-  padding: 1.75rem var(--gutter) 6rem;
+/* One form, in the list's place: "Back", then the form. */
+.formView {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
 }
 
-/* A comfortable width for a column of inputs. */
+/* Set in by a row's padding, so the fields line up with the rows of the
+   list and with the toolbar. */
 .form {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 1.25rem;
-  max-width: 40rem;
+  padding-inline: 0.625rem;
 }
 
 .formHeading {
@@ -167,32 +171,54 @@
   gap: 0.25rem;
 }
 
-/* The form's heading takes focus when something is picked. It is not a
-   control, so it shows no focus ring. */
+/* The form's heading takes focus when a form opens. It is not a control, so
+   it shows no focus ring. */
 .form h2:focus {
   outline: none;
 }
 
-/* Structure beside the form when there is room, above it when there isn't.
-   The left side takes about a quarter of the window, within limits. */
+/* The right side: the preview. Tall enough to show a good part of the page
+   on any screen. */
+.previewSide {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  height: max(24rem, calc(100dvh - 12rem));
+}
+
+/* On a narrow screen only the chosen side is shown. */
+@media (width < 50rem) {
+  .columns[data-narrow-side="edit"] .previewSide,
+  .columns[data-narrow-side="preview"] .panel {
+    display: none;
+  }
+}
+
+/* With room for both, the form sits beside the preview. The left side takes
+   about a third of the window, within limits. */
 @media (min-width: 50rem) {
+  .sides {
+    display: none;
+  }
+
   .columns {
-    grid-template-columns: clamp(17rem, 28vw, 22rem) minmax(0, 1fr);
+    grid-template-columns: clamp(22rem, 32vw, 28rem) minmax(0, 1fr);
   }
 
-  .side {
+  .panel {
     border-right: 1px solid var(--border);
-    border-bottom: 0;
   }
 
-  .detail {
-    padding-inline: clamp(1.5rem, 4vw, 3.5rem);
+  /* The preview stays in view while a long form scrolls past it. */
+  .previewSide {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100dvh;
   }
 }
 
 /* With room both ways, the window itself stops scrolling. The toolbar stays
-   put and each side scrolls on its own, so the structure is still in view
-   from the bottom of a long form. */
+   put, the left side scrolls on its own, and the preview fills the rest. */
 @media (min-width: 50rem) and (min-height: 40rem) {
   .editor {
     display: grid;
@@ -205,9 +231,15 @@
     min-height: 0;
   }
 
-  .side,
-  .detail {
+  .panel {
     overflow-y: auto;
+  }
+
+  .previewSide {
+    position: static;
+    align-self: stretch;
+    height: auto;
+    min-height: 0;
   }
 }
 

@@ -1,0 +1,53 @@
+/* The live preview: a bar with its controls, then the page in a frame. */
+
+.pane {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+}
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+  padding: 0.375rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/* The space the page is drawn in. Its size is what the pane measures, and it
+   never grows to fit what is inside it. */
+.stage {
+  min-height: 0;
+  padding: 1rem;
+  overflow: hidden;
+  background: var(--hover);
+}
+
+/* The page as it appears, after any shrinking. It clips the frame inside it,
+   which is still its full size as far as layout is concerned. */
+.window {
+  margin-inline: auto;
+  overflow: hidden;
+  border-radius: var(--radius);
+  outline: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.page {
+  display: block;
+  border: 0;
+  transform-origin: top left;
+}
+
+@media (max-width: 36rem) {
+  .bar {
+    padding-inline: 0.75rem;
+  }
+
+  .stage {
+    padding: 0.75rem;
+  }
+}
