@@ -204,3 +204,22 @@ export function validateTree(
 
   return result;
 }
+
+/**
+ * Problems as sentences that name the component and the prop, for where there
+ * is no form to mark them on, such as a file that was refused:
+ * `"club-banner" heading: Heading is required.`
+ */
+export function describeIssues(issues: IssuesByInstance): string[] {
+  const lines: string[] = [];
+
+  for (const [instanceId, instanceIssues] of Object.entries(issues)) {
+    for (const issue of instanceIssues) {
+      // A problem with the component as a whole has no prop to name.
+      const prop = issue.path === "" ? "" : ` ${issue.path}`;
+      lines.push(`"${instanceId}"${prop}: ${issue.message}`);
+    }
+  }
+
+  return lines;
+}

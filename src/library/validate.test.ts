@@ -4,6 +4,7 @@ import type { ComponentInstance } from "@/page-model/types";
 import { definitions } from "./definitions";
 import type { Field } from "./types";
 import {
+  describeIssues,
   emptyValue,
   fillGroup,
   fillTree,
@@ -175,4 +176,16 @@ test("validateTree flags unknown components and misplaced children", () => {
   const issues = validateTree(page, definitions);
   assert.match(issues["mystery"][0].message, /not a component in the library/);
   assert.match(issues["grid"][0].message, /cannot contain other components/);
+});
+
+test("describeIssues names the component, and the prop when there is one", () => {
+  const page: ComponentInstance[] = [
+    { id: "mystery", type: "carousel", props: {} },
+    { id: "intro", type: "banner", props: { heading: "", message: "" } },
+  ];
+
+  assert.deepEqual(describeIssues(validateTree(page, definitions)), [
+    '"mystery": "carousel" is not a component in the library.',
+    '"intro" heading: Heading is required.',
+  ]);
 });

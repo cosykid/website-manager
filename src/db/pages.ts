@@ -65,11 +65,15 @@ export const getPageByPath = cache(
   },
 );
 
-/** Creates an empty page. The unique index decides whether the path is free. */
+/**
+ * Creates a page: an empty one, or one with the content it is given. The
+ * unique index decides whether the path is free.
+ */
 export async function createPage(
   siteId: string,
   title: string,
   path: string,
+  content: ComponentInstance[] = [],
 ): Promise<{ id: string } | "path-taken"> {
   const now = new Date();
   const pages = await pagesCollection();
@@ -80,7 +84,7 @@ export async function createPage(
       siteId,
       path,
       title,
-      content: [],
+      content,
       createdAt: now,
       updatedAt: now,
     });

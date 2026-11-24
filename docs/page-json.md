@@ -3,8 +3,9 @@
 Every page is one JSON document. The manager writes that document for you.
 This guide is for reading one, or for writing one by hand.
 
-`npm run seed` checks every file in `seed/pages/` against these rules before
-it loads anything, and says what is wrong and where.
+A file can be loaded in two ways: with **Import** in the manager, or with
+`npm run seed`. Both check it against these rules before they load anything,
+and say what is wrong and where.
 
 - [A page](#a-page)
 - [A component](#a-component)
@@ -47,8 +48,8 @@ That is a whole, valid page: a section that holds a banner.
 
 | Field | Example | Rules |
 | --- | --- | --- |
-| `schemaVersion` | `1` | Always `1`. Nothing reads it yet. It is there so a later change to this format can be detected. |
-| `siteId` | `"ironbarks"` | The `id` of a site in `seed/sites.json`. The demo has `ironbarks` and `harbour-sevens`. |
+| `schemaVersion` | `1` | Always `1`. It is there so a later change to this format can be detected. The manager's import refuses any other number, and reads a file with no `schemaVersion` as version 1. |
+| `siteId` | `"ironbarks"` | The `id` of a site in `seed/sites.json`. The demo has `ironbarks` and `harbour-sevens`. The seed needs it. The manager's import does not read it: the page goes to the site it is imported into. |
 | `path` | `"/club"` | Where the page lives on its site. See the rules below. |
 | `title` | `"The club"` | Required. Shown in the browser tab as "The club \| Ironbarks", and read out by screen readers as the page's main heading. It is not drawn on the page. |
 | `content` | `[ … ]` | The page's components, from top to bottom. It may be empty. |
@@ -298,6 +299,38 @@ From the top:
 
 ## Load a page
 
+There are two ways to load a file: import it in the manager, or seed it.
+
+### Import it in the manager
+
+1. Open the site in the manager, at http://localhost:3000.
+2. Under **Import a page**, choose the file.
+
+The page is created and opens in the editor. It is live straight away, as a
+page created in the manager is.
+
+- **The page goes to the site you are on.** `siteId` in the file is not read,
+  so one file can be imported into any site.
+- **The whole file has to be right.** If anything is wrong, no page is made
+  and every problem is listed.
+- **It only adds a page.** If the site already has a page at that path, the
+  file is refused. To put the file's components on that page, open the page,
+  choose **JSON**, then **Import**. The page keeps its title and path,
+  nothing is saved until **Save page**, and **Undo** brings the old
+  components back. Here a file is taken as long as its structure is right.
+  Props that do not suit their component are marked in the editor, and the
+  page cannot be saved until they are fixed.
+- **It fills in what you left out**, as the seed does (see below).
+- **It does not add the page to the site's menu.** That is part of the site,
+  in `seed/sites.json`.
+
+To get a page out as a file, open it in the manager and choose **JSON**,
+then **Export**. The file is in this format and is named like the demo files,
+for example `ironbarks.squad.json`. It holds the page as it is in the editor,
+with any changes that have not been saved yet.
+
+### Seed it
+
 1. Save the file in `seed/pages/`. Any name that ends in `.json` works. The
    demo files are named `<site>.<page>.json`.
 2. Run `npm run seed`.
@@ -322,15 +355,6 @@ What the seed does:
 - **It has stored pages rendered again.** In production, rendered pages are
   kept in Redis. A seed puts all of them out of date, so no visitor is shown
   an old one.
-
-To see the JSON of a page that is in the database, such as one built in the
-manager, run this with the page's own site and path:
-
-```bash
-docker compose exec -T mongo mongosh website_manager --quiet --eval 'print(JSON.stringify(db.pages.findOne({ siteId: "ironbarks", path: "/squad" }, { _id: 0, createdAt: 0, updatedAt: 0 }), null, 2))'
-```
-
-The keys can come out in a different order. Order does not matter in JSON.
 
 ## When a file is wrong
 
@@ -366,6 +390,29 @@ quotes, then the prop. Dots lead into groups and lists, and lists count from
 
 The manager reports the same problems, in the same words, when a page is
 saved there.
+
+The manager's import lists them too. It leaves out the page's name, because
+there is only one file:
+
+```text
+club.json was not imported.
+  "club-top" layout: Choose one of the layout options.
+  "club-banner" heading: Heading is required.
+```
+
+It words the problems with the file itself differently, and has three of its
+own:
+
+| Message | Cause |
+| --- | --- |
+| `The file is not valid JSON: …` | A slip in the JSON itself, as in the first row above. The message gives the line and the column. |
+| `The file must hold one page: an object with "title", "path" and "content".` | The file is JSON but not a page: a list, a number or a piece of text. |
+| `Title is required.` | `title` is absent, empty, or not text. |
+| `Path must start with "/" and use lowercase letters, …` | `path` is absent or breaks the rules under [A page](#a-page). |
+| `"content" must be a list of components. …` | The structure is wrong somewhere, as for `content is not a valid tree of components` above. |
+| `"schemaVersion" is 2. This manager reads version 1.` | The file says it is in a later version of this format. |
+| `Ironbarks already has a page at "/club". …` | Import only adds pages. Change `path` in the file, or import the file into that page from its editor. |
+| `The file is larger than 500 KB, …` | A page file is a few kilobytes. This is some other file. |
 
 ## Mistakes nothing catches
 

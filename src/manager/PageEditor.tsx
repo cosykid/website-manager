@@ -23,6 +23,7 @@ import { GroupFields } from "./FieldEditor";
 import { Icon } from "./Icon";
 import { Outline, rowId } from "./Outline";
 import styles from "./PageEditor.module.css";
+import { PageJsonDialog } from "./PageJsonDialog";
 import { PreviewPane } from "./PreviewPane";
 import { SiteMark } from "./SiteMark";
 
@@ -90,10 +91,13 @@ export function PageEditor({ site, siteOrigin, page, definitions }: PageEditorPr
   // Set while the "Add a component" dialog is open: where the choice will go.
   // `parentId` null means the page itself.
   const [picker, setPicker] = useState<{ parentId: string | null } | null>(null);
-  // The page just before the last removal, and just after. "Undo" is offered
-  // for as long as nothing else has changed since.
-  const [removal, setRemoval] = useState<{
-    label: string;
+  // Whether the "Page JSON" dialog is open.
+  const [jsonOpen, setJsonOpen] = useState(false);
+  // The last change that took something away: what to say about it, and the
+  // page just before and just after. "Undo" is offered for as long as nothing
+  // else has changed since.
+  const [undoable, setUndoable] = useState<{
+    message: string;
     before: ComponentInstance[];
     after: ComponentInstance[];
   } | null>(null);
@@ -113,7 +117,7 @@ export function PageEditor({ site, siteOrigin, page, definitions }: PageEditorPr
   const detailErrors = showProblems ? checkPageDetails(title, path) : {};
   const pathError = detailErrors.path ?? (pathTaken === path ? PATH_TAKEN_MESSAGE : "");
   const detailProblems = (detailErrors.title ? 1 : 0) + (pathError ? 1 : 0);
-  const canUndoRemoval = removal !== null && removal.after === content;
+  const canUndo = undoable !== null && undoable.after === content;
 
   // Warn before the tab is closed or reloaded with unsaved work.
   useEffect(() => {
@@ -184,11 +188,8 @@ export function PageEditor({ site, siteOrigin, page, definitions }: PageEditorPr
     if (!instance) return;
 
     const after = removeInstance(content, id);
-    setRemoval({
-      label: definitions[instance.type]?.label ?? "Component",
-      before: content,
-      after,
-    });
+    const label = definitions[instance.type]?.label ?? "Component";
+    setUndoable({ message: `${label} removed.`, before: content, after });
     changeContent(after);
     // The open form may belong to what was removed. Show the list again.
     if (open.kind === "component" && !findInstance(after, open.id)) {
@@ -200,14 +201,38 @@ export function PageEditor({ site, siteOrigin, page, definitions }: PageEditorPr
     if (!selected) return;
     const after = updateProps(content, selected.id, props);
     // The form says when a change removed something, such as a card.
-    if (removed) setRemoval({ label: removed, before: content, after });
+    if (removed) setUndoable({ message: `${removed} removed.`, before: content, after });
     changeContent(after);
   }
 
-  function undoRemoval() {
-    if (!removal) return;
-    changeContent(removal.before);
-    setRemoval(null);
+  /**
+   * Swaps every component on the page for the ones read from a file. Like any
+   * other edit, it stays in the browser until "Save page".
+   */
+  function replaceComponents(fileName: string, fromFile: ComponentInstance[]) {
+    const after = fillTree(fromFile, definitions);
+    setUndoable({
+      message: `Components replaced from ${fileName}.`,
+      before: content,
+      after,
+    });
+    changeContent(after);
+    // A file can hold props that do not suit their component. Mark them
+    // straight away, as a refused save would.
+    if (Object.keys(validateTree(after, definitions)).length > 0) setShowProblems(true);
+    // An open form may belong to a component that is no longer on the page.
+    setOpen({ kind: "list" });
+    setJsonOpen(false);
+  }
+
+  function undo() {
+    if (!undoable) return;
+    changeContent(undoable.before);
+    // The open form may belong to a component the undo takes away again.
+    if (open.kind === "component" && !findInstance(undoable.before, open.id)) {
+      setOpen({ kind: "list" });
+    }
+    setUndoable(null);
   }
 
   /**
@@ -304,6 +329,10 @@ export function PageEditor({ site, siteOrigin, page, definitions }: PageEditorPr
           <p className={styles.status} role="status">
             {status}
           </p>
+          <button type="button" className="button" onClick={() => setJsonOpen(true)}>
+            JSON
+            <span className="visually-hidden">: export or import this page</span>
+          </button>
           <a
             className="button"
             href={`${siteOrigin}${savedPath}`}
@@ -556,10 +585,10 @@ export function PageEditor({ site, siteOrigin, page, definitions }: PageEditorPr
 
       {/* Always in the page, so screen readers announce what appears in it. */}
       <div className={styles.noticeArea} role="status">
-        {canUndoRemoval && (
+        {canUndo && (
           <p className={styles.notice}>
-            {removal.label} removed.
-            <button type="button" className={styles.undo} onClick={undoRemoval}>
+            {undoable.message}
+            <button type="button" className={styles.undo} onClick={undo}>
               Undo
             </button>
           </p>
@@ -572,6 +601,20 @@ export function PageEditor({ site, siteOrigin, page, definitions }: PageEditorPr
         definitions={definitions}
         onPick={addComponent}
         onClose={() => setPicker(null)}
+      />
+
+      <PageJsonDialog
+        open={jsonOpen}
+        page={{
+          schemaVersion: 1,
+          siteId: site.id,
+          path: path.trim(),
+          title: title.trim(),
+          content,
+        }}
+        hasUnsavedChanges={hasUnsavedChanges}
+        onImport={replaceComponents}
+        onClose={() => setJsonOpen(false)}
       />
     </main>
   );

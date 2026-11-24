@@ -591,6 +591,28 @@ textarea.input {
   align-items: start;
 }
 
+/* A line of explanation in the section stays short enough to read easily. */
+.new-page > .help {
+  max-width: 34rem;
+}
+
+/* A file that was not imported: one line to say so, then each reason. */
+.import-problems {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.375rem;
+}
+
+/* The reasons start under the words of the line above, past its icon. */
+.import-problems ul {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding-left: 2.375rem;
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .button,
   .icon-button,

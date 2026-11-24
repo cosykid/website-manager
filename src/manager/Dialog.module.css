@@ -1,5 +1,5 @@
-/* The one thing in the manager that floats above the page, so it is the one
-   thing with a shadow. */
+/* The manager's dialogs: "Add a component" and "Page JSON". A dialog floats
+   above the page, so it has a shadow. */
 .dialog {
   width: min(30rem, calc(100% - 2rem));
   padding: 0;

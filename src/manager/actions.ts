@@ -7,6 +7,7 @@ import { createPage, savePage } from "@/db/pages";
 import { getSite } from "@/db/sites";
 import { definitions } from "@/library/definitions";
 import {
+  describeIssues,
   fillTree,
   validateTree,
   type IssuesByInstance,
@@ -16,6 +17,11 @@ import {
   PATH_TAKEN_MESSAGE,
   type PageDetailErrors,
 } from "@/page-model/details";
+import {
+  MAX_PAGE_FILE_BYTES,
+  PAGE_FILE_TOO_LARGE,
+  readPageFile,
+} from "@/page-model/file";
 import { isInstanceTree } from "@/page-model/shape";
 import { publicRoute } from "@/site/public-route";
 import type { Site } from "@/site/types";
@@ -54,6 +60,53 @@ export async function createPageAction(input: {
   const result = await createPage(site.id, title, path);
   if (result === "path-taken") {
     return { ok: false, errors: { path: PATH_TAKEN_MESSAGE } };
+  }
+
+  refreshPublicPage(site, path);
+  return { ok: true, pageId: result.id };
+}
+
+export type ImportPageResult =
+  | { ok: true; pageId: string }
+  /** Why the file was refused: one sentence for each problem. */
+  | { ok: false; problems: string[] };
+
+/**
+ * Creates a page on a site from the text of a page file. The file gives the
+ * title, the path and the components. The site is the one it is imported into.
+ */
+export async function importPageAction(input: {
+  siteId: string;
+  fileText: string;
+}): Promise<ImportPageResult> {
+  const fileText = String(input.fileText);
+  // A character is at least one byte, so text this long is over the limit.
+  if (fileText.length > MAX_PAGE_FILE_BYTES) {
+    return { ok: false, problems: [PAGE_FILE_TOO_LARGE] };
+  }
+
+  const read = readPageFile(fileText);
+  if (!read.ok) return { ok: false, problems: read.problems };
+  const { title, path } = read.page;
+
+  // The same order as a save: fill in what was left out, then check.
+  const content = fillTree(read.page.content, definitions);
+  const issues = validateTree(content, definitions);
+  if (Object.keys(issues).length > 0) {
+    return { ok: false, problems: describeIssues(issues) };
+  }
+
+  const site = await getSite(String(input.siteId));
+  if (!site) return { ok: false, problems: ["This site no longer exists."] };
+
+  const result = await createPage(site.id, title, path, content);
+  if (result === "path-taken") {
+    return {
+      ok: false,
+      problems: [
+        `${site.name} already has a page at "${path}". Change "path" in the file, or open that page and import the file there to replace its components.`,
+      ],
+    };
   }
 
   refreshPublicPage(site, path);

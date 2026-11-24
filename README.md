@@ -75,17 +75,20 @@ they do not clash with ones you may already have running.
 6. Save with a required field empty to see where problems are reported.
 7. Create a page on Harbour Sevens. The same components appear in that
    site's colours, type and corner shapes.
-8. Visit a path that does not exist, such as
+8. Carry a page from one site to the other. Open Ironbarks' **Squad**, choose
+   **JSON**, then **Export**. On Harbour Sevens, choose that file under
+   **Import a page**. The page is there, in the other site's theme.
+9. Visit a path that does not exist, such as
    http://ironbarks.localhost:3000/nope. It answers with HTTP 404, as does a
    path that exists only on the other site.
-9. See the pre-rendering. Stop the dev server, run `npm run build` then
-   `npm start`, and run the command below. It says `HIT` although nobody has
-   visited the page: the server rendered it when it started. Save that page in
-   the manager and refresh it. The edit is there, and it is still a `HIT`.
+10. See the pre-rendering. Stop the dev server, run `npm run build` then
+    `npm start`, and run the command below. It says `HIT` although nobody has
+    visited the page: the server rendered it when it started. Save that page in
+    the manager and refresh it. The edit is there, and it is still a `HIT`.
 
-   ```bash
-   curl -sI http://ironbarks.localhost:3000/squad | grep x-nextjs-cache
-   ```
+    ```bash
+    curl -sI http://ironbarks.localhost:3000/squad | grep x-nextjs-cache
+    ```
 
 ## How it fits together
 
@@ -104,13 +107,13 @@ they do not clash with ones you may already have running.
 
 | Folder | What is in it |
 | --- | --- |
-| `src/page-model` | The page JSON: its types, pure functions that edit the tree, and shape checks. Also the two messages the editor and its preview exchange. No React, no database. |
+| `src/page-model` | The page JSON: its types, pure functions that edit the tree, shape checks, and reading and writing a page as a file. Also the two messages the editor and its preview exchange. No React, no database. |
 | `src/library` | The shared components. Each has a definition (data) and a React component. `primitives/` holds Button, Heading and Image. `validate.ts` checks values against definitions. |
 | `src/site` | The Site and Theme types, theme to CSS variables, and the contrast check. |
 | `src/db` | The MongoDB connection and every query. |
 | `src/cache` | The rendered public pages: the Redis connection, the cache Next.js keeps them in, and the pre-rendering. |
 | `src/renderer` | `RenderTree`, the site header and footer, and the styles shared by all sites. `preview/` is the page the editor shows in its preview frame. |
-| `src/manager` | The manager's screens: page editor, outline, generated forms, preview pane, component picker, server actions. |
+| `src/manager` | The manager's screens: page editor, outline, generated forms, preview pane, component picker, JSON import and export, server actions. |
 | `src/app/(manager)` | Manager routes. |
 | `src/app/(sites)` | The one public route, and the preview route the editor frames. |
 | `src/proxy.ts` | Sends each hostname to the manager or to a site. |
@@ -219,7 +222,13 @@ Notes:
   the library is skipped when rendering, and the editor shows it as an
   unknown component that can be removed.
 - `schemaVersion` is there so a future change to the format itself can be
-  detected and migrated. Nothing reads it yet.
+  detected and migrated. So far only the import reads it: it refuses a file
+  that is not version 1.
+- A page goes in and out of the manager as this document. **JSON** in the
+  editor exports the page as a file, or replaces its components with a
+  file's. **Import a page** on a site's list of pages creates a page from a
+  file. `siteId` is not read on the way in: a page belongs to the site it is
+  imported into, so one file works on any site.
 
 ## Components
 
@@ -413,6 +422,15 @@ id, and shares `resolveInstance` with `RenderTree`, so both decide in the
 same way what can be drawn. The cost is a second document to load, and a
 second walk of the tree to keep in step with the first.
 
+**A file is treated like any other edit.** Export writes the editor's own
+copy of the page to a file, in the browser. Import into an open page is read
+in the browser too, and replaces the page's components as an unsaved change.
+So it shows in the preview, can be undone, and reaches the database through
+Save page and its checks, with no second way in. Creating a page from a file
+does go to the server, where it gets the same checks as a save. Both read the
+file with one function, `readPageFile` in `src/page-model/file.ts`. The cost
+is that an import replaces all of a page's components: there is no merging.
+
 **Stored JSON is never trusted.** The server action checks the shape of the
 tree, then every prop against its definition, and stores only what the
 definitions describe. The renderer checks again and skips an instance it
@@ -467,8 +485,9 @@ dark Ironbarks theme that background is not light, so the label editors see
 describes what it does instead.
 
 **Undo instead of "Are you sure?".** Removing a component, a card or a link
-offers Undo until the next change. Nothing in the manager is irreversible
-until Save page, and the editor warns before leaving with unsaved changes.
+offers Undo until the next change, and so does replacing a page's components
+from a file. Nothing in the manager is irreversible until Save page, and the
+editor warns before leaving with unsaved changes.
 
 **Design.** The manager is black and white in system type and follows the
 reader's light or dark setting. It has no colour of its own: the only colour
@@ -490,9 +509,9 @@ problems are shown with an icon and words, never colour alone.
   and draft/publish. Save page publishes straight away, and the editor says
   so.
 - **Stretch goals partly done:** reordering (move up and move down for
-  components and for list entries, no drag and drop) and tests (47 unit tests
-  on the page tree, validation, page details, preview messages, stored pages
-  and contrast; none that render components or drive a browser).
+  components and for list entries, no drag and drop) and tests (55 unit tests
+  on the page tree, validation, page details, page files, preview messages,
+  stored pages and contrast; none that render components or drive a browser).
 - Deleting a page, editing a site or its theme in the manager, and uploading
   images. Images are addresses.
 - Each theme has one appearance. A site does not follow the visitor's light

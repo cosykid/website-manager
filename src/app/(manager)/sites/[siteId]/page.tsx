@@ -5,6 +5,7 @@ import { listPages } from "@/db/pages";
 import { getSite } from "@/db/sites";
 import { CreatePageForm } from "@/manager/CreatePageForm";
 import { Icon } from "@/manager/Icon";
+import { ImportPageForm } from "@/manager/ImportPageForm";
 import { getSiteOrigin } from "@/manager/site-origin";
 import { SiteMark } from "@/manager/SiteMark";
 
@@ -21,7 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: site ? site.name : "Site not found" };
 }
 
-/** One site: its pages, and a form to create another. */
+/** One site: its pages, and two ways to add another: a form, or a JSON file. */
 export default async function SitePagesPage({ params }: Props) {
   const { siteId } = await params;
   const site = await getSite(siteId);
@@ -61,7 +62,7 @@ export default async function SitePagesPage({ params }: Props) {
         </h2>
         {pages.length === 0 ? (
           <p className="empty">
-            This site has no pages yet. Create the first one below.
+            This site has no pages yet. Create or import the first one below.
           </p>
         ) : (
           <ul className="rows">
@@ -106,6 +107,7 @@ export default async function SitePagesPage({ params }: Props) {
       </section>
 
       <CreatePageForm siteId={site.id} />
+      <ImportPageForm siteId={site.id} />
     </main>
   );
 }

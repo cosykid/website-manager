@@ -19,7 +19,7 @@ import {
   sitesCollection,
 } from "@/db/collections";
 import { definitions } from "@/library/definitions";
-import { fillTree, validateTree } from "@/library/validate";
+import { describeIssues, fillTree, validateTree } from "@/library/validate";
 import { isInstanceTree, isValidPath } from "@/page-model/shape";
 import type { PageDocument } from "@/page-model/types";
 import { findContrastProblems } from "@/site/contrast";
@@ -63,13 +63,8 @@ function checkSeedData(sites: Site[], pages: PageDocument[]): void {
     // A hand-written page may leave optional props out. Fill them in before
     // checking, which is the order the renderer uses.
     const filled = fillTree(page.content, definitions);
-    const issues = validateTree(filled, definitions);
-    for (const [instanceId, instanceIssues] of Object.entries(issues)) {
-      for (const issue of instanceIssues) {
-        // A problem with the component as a whole has no prop to name.
-        const prop = issue.path === "" ? "" : ` ${issue.path}`;
-        problems.push(`${name}, "${instanceId}"${prop}: ${issue.message}`);
-      }
+    for (const line of describeIssues(validateTree(filled, definitions))) {
+      problems.push(`${name}, ${line}`);
     }
   }
 
