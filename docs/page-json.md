@@ -94,7 +94,7 @@ Every prop holds one of five kinds of value:
 | Kind | Written as | Rules |
 | --- | --- | --- |
 | Text | `"Meet the squad"` | Plain text. HTML and Markdown are not interpreted, they show as typed. Required text cannot be empty or only spaces. |
-| Address | `"/squad"` or `"https://example.com/tickets"` | A path on the same site that starts with a single `/`, or a full address that starts with `https://` or `http://`. Used for links and images. |
+| Address | `"/squad"` or `"https://example.com/tickets"` | A path on the same site that starts with a single `/`, or a full address that starts with `https://` or `http://`. Used for links and images. An image uploaded in the manager has one such as `/images/9f86d081884c7d659a2feaa0c55ad015.jpg`. |
 | Choice | `"two-column"` | One of the listed values, spelled exactly. |
 | Group | `{ "label": "Meet the squad", "href": "/squad" }` | Props that belong together. |
 | List | `[ { … }, { … } ]` | Any number of entries, including none. |
@@ -215,6 +215,9 @@ Each entry in `cards`:
 - A file in the project's `public` folder is addressed from the site's root:
   `public/seed/ironbarks/jersey-1.svg` is `/seed/ironbarks/jersey-1.svg`.
   A full `https://` address on another host also works.
+- To use a picture from your own computer, upload it in the manager: choose
+  **Upload image** on any card and copy the address it is given. The address
+  works on every site.
 
 ## A complete example
 
@@ -345,7 +348,8 @@ What the seed does:
   database is left alone, so a seed never overwrites an editor's work. It
   also means that changing the file of a page that is already loaded does
   nothing. To load it again, run `npm run seed -- --reset`. That deletes
-  every site and page first, including pages made or changed in the manager.
+  every site, page and uploaded image first, including pages made or changed in
+  the manager.
 - **It fills in what you left out.** Each missing prop is stored with its
   empty value, and a prop the component does not have is dropped. The manager
   saves pages the same way.
@@ -420,7 +424,12 @@ own:
   `"mesage"`, so it is dropped and the banner has no message. A prop the
   component does not have is never an error.
 - **An address that leads nowhere.** Nothing checks that an image exists or
-  that a link's page does. A wrong image address shows as a broken image.
+  that a link's page does. A wrong image address shows as a broken image. The
+  form in the manager says when there is no picture at an address, but the
+  page can be saved.
+- **An uploaded picture that was left behind.** A page file holds a picture's
+  address and not the picture itself. Imported into a manager with another
+  database, the page has broken images until they are uploaded there.
 - **Two files with the same site and path.** Only one of them is loaded.
 - **No alt text** on a picture that carries meaning.
 
@@ -456,8 +465,8 @@ hour to show. The README's "Pre-rendering" says why.)
   card grid titles are `h2`. Card headings are `h3`.
 - **Links go to pages.** There are no `mailto:`, `tel:` or `#anchor`
   addresses.
-- **Images are addresses.** There is no upload, and a card's image is always
-  cropped to 4:3.
+- **Images are addresses.** A page file has no pictures in it, only where to
+  find them. A card's image is always cropped to 4:3.
 - **Content is fixed.** A page cannot pull in data, such as fixtures from
   another system, or reuse a block from another page.
 - **A page has a title and a path, and nothing more.** No description for

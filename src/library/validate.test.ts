@@ -87,6 +87,15 @@ test("addresses must be a path on the site or an http(s) address", () => {
   }
 });
 
+test("an image's address follows the same rules as a link's", () => {
+  const fields: Record<string, Field> = { photo: { kind: "image", label: "Photo" } };
+
+  assert.deepEqual(validateGroup(fields, { photo: "/images/a.jpg" }), []);
+  assert.deepEqual(validateGroup(fields, { photo: "" }), []);
+  assert.deepEqual(paths(validateGroup(fields, { photo: "javascript:alert(1)" })), ["photo"]);
+  assert.deepEqual(paths(validateGroup(fields, { photo: 3 })), ["photo"]);
+});
+
 test("emptyValue gives each kind of field a starting value", () => {
   const select: Field = {
     kind: "select",

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   MAX_PAGE_FILE_BYTES,
+  PAGE_FILE_ACCEPT,
   PAGE_FILE_TOO_LARGE,
   pageFileName,
   readPageFile,
@@ -86,7 +87,11 @@ export function PageJsonDialog({
           </button>
         </li>
         <li>
-          <FileButton className={styles.choice} onFile={importFile}>
+          <FileButton
+            className={styles.choice}
+            accept={PAGE_FILE_ACCEPT}
+            onFile={importFile}
+          >
             <span className={styles.choiceLabel}>Import</span>{" "}
             <span className={styles.choiceDescription}>
               Replace this page&apos;s components with the ones in a file. The

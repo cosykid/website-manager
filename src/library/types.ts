@@ -27,11 +27,20 @@ export type TextField = FieldBase & {
   placeholder?: string;
 };
 
-/** A link or image address: a path on this site ("/about") or a full web address. */
+/** Where a link goes: a path on this site ("/about") or a full web address. */
 export type UrlField = FieldBase & {
   kind: "url";
   required?: boolean;
   placeholder?: string;
+};
+
+/**
+ * An image. What is stored is its address, which follows the same rules as a
+ * link's. The editor types one in, or uploads a file and is given one.
+ */
+export type ImageField = FieldBase & {
+  kind: "image";
+  required?: boolean;
 };
 
 /** One choice from a fixed list. */
@@ -61,7 +70,13 @@ export type ListField = FieldBase & {
   itemTitleField?: string;
 };
 
-export type Field = TextField | UrlField | SelectField | GroupField | ListField;
+export type Field =
+  | TextField
+  | UrlField
+  | ImageField
+  | SelectField
+  | GroupField
+  | ListField;
 
 /**
  * Goes in the `default` branch of every `switch` over `field.kind`.

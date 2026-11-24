@@ -4,6 +4,8 @@ import { useRef, type ReactNode } from "react";
 
 type FileButtonProps = {
   className: string;
+  /** The kinds of file to offer, in the form <input accept> takes. */
+  accept: string;
   disabled?: boolean;
   children: ReactNode;
   /** Called with the file the editor chose. */
@@ -11,13 +13,19 @@ type FileButtonProps = {
 };
 
 /**
- * A button that asks for a JSON file.
+ * A button that asks for a file.
  *
  * The browser's own file input cannot be styled and words itself ("Choose
  * file, no file chosen"). So it is kept out of sight and opened from an
  * ordinary button, which the keyboard and screen readers use like any other.
  */
-export function FileButton({ className, disabled, children, onFile }: FileButtonProps) {
+export function FileButton({
+  className,
+  accept,
+  disabled,
+  children,
+  onFile,
+}: FileButtonProps) {
   const input = useRef<HTMLInputElement>(null);
 
   return (
@@ -25,7 +33,7 @@ export function FileButton({ className, disabled, children, onFile }: FileButton
       <input
         ref={input}
         type="file"
-        accept="application/json,.json"
+        accept={accept}
         hidden
         onChange={(event) => {
           const file = event.target.files?.[0];

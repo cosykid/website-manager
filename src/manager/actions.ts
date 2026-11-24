@@ -3,8 +3,16 @@
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { prerenderPage } from "@/cache/prerender";
+import { saveImage } from "@/db/images";
 import { createPage, savePage } from "@/db/pages";
 import { getSite } from "@/db/sites";
+import {
+  IMAGE_TOO_LARGE,
+  imageAddress,
+  MAX_IMAGE_BYTES,
+  NOT_AN_IMAGE,
+  readImageType,
+} from "@/images/image-file";
 import { definitions } from "@/library/definitions";
 import {
   describeIssues,
@@ -111,6 +119,27 @@ export async function importPageAction(input: {
 
   refreshPublicPage(site, path);
   return { ok: true, pageId: result.id };
+}
+
+export type UploadImageResult =
+  | { ok: true; address: string }
+  | { ok: false; message: string };
+
+/**
+ * Stores an image and answers with its address. No page shows it until one
+ * that holds the address is saved.
+ */
+export async function uploadImageAction(form: FormData): Promise<UploadImageResult> {
+  const file = form.get("image");
+  if (!(file instanceof File)) return { ok: false, message: NOT_AN_IMAGE };
+  if (file.size > MAX_IMAGE_BYTES) return { ok: false, message: IMAGE_TOO_LARGE };
+
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const type = readImageType(bytes);
+  if (!type) return { ok: false, message: NOT_AN_IMAGE };
+
+  const id = await saveImage(bytes, type);
+  return { ok: true, address: imageAddress(id, type) };
 }
 
 export type SavePageResult =

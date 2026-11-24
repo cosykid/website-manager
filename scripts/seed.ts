@@ -2,7 +2,7 @@
  * Puts the two demo sites and their pages into MongoDB.
  *
  *   npm run seed              adds whatever is missing and leaves edits alone
- *   npm run seed -- --reset   deletes every site and page first
+ *   npm run seed -- --reset   deletes every site, page and uploaded image first
  *
  * Sites are always written from seed/sites.json, because sites are not edited
  * in the manager. Pages are only added when their site and path don't exist
@@ -15,6 +15,7 @@ import { getRedis } from "@/cache/redis.mts";
 import { getMongoClient } from "@/db/client";
 import {
   ensureIndexes,
+  imagesCollection,
   pagesCollection,
   sitesCollection,
 } from "@/db/collections";
@@ -93,7 +94,9 @@ async function seed(): Promise<void> {
     if (process.argv.includes("--reset")) {
       await sitesInDb.deleteMany({});
       await pagesInDb.deleteMany({});
-      console.log("Removed every site and page.");
+      const imagesInDb = await imagesCollection();
+      await imagesInDb.deleteMany({});
+      console.log("Removed every site, page and uploaded image.");
     }
 
     await ensureIndexes();

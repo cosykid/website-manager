@@ -2,7 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { MAX_PAGE_FILE_BYTES, PAGE_FILE_TOO_LARGE } from "@/page-model/file";
+import {
+  MAX_PAGE_FILE_BYTES,
+  PAGE_FILE_ACCEPT,
+  PAGE_FILE_TOO_LARGE,
+} from "@/page-model/file";
 import { importPageAction } from "./actions";
 import { FileButton } from "./FileButton";
 import { ImportProblems, type RefusedFile } from "./ImportProblems";
@@ -51,7 +55,12 @@ export function ImportPageForm({ siteId }: { siteId: string }) {
       </p>
 
       <div>
-        <FileButton className="button" disabled={importing} onFile={importFile}>
+        <FileButton
+          className="button"
+          accept={PAGE_FILE_ACCEPT}
+          disabled={importing}
+          onFile={importFile}
+        >
           {importing ? "Importing page…" : "Choose a JSON file"}
         </FileButton>
       </div>

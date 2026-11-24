@@ -13,6 +13,7 @@ const paths = {
   next: "m9 6 6 6-6 6",
   back: "m15 6-6 6 6 6",
   page: "M6 3h8l4 4v14H6zM14 3v4h4",
+  image: "M4 5h16v14H4zM4 16l5-5 8 8M14 14l2-2 4 4M15 9h.01",
   // A component that holds others, and one that does not.
   container: "M4 4h16v16H4zM8 8h8v3H8zM8 14h8v2H8z",
   component: "M4 8h16v8H4z",

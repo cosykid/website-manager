@@ -1,0 +1,40 @@
+/* The picture, beside the button that uploads another. */
+.image {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.picture {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 5rem;
+  height: 5rem;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: var(--selected);
+  color: var(--text-muted);
+}
+
+/* The whole picture, whatever its shape. How a component crops it shows in
+   the preview. */
+.picture img {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.upload {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
+  align-content: start;
+  gap: 0.375rem;
+}
+
+.fileName {
+  overflow-wrap: anywhere;
+}

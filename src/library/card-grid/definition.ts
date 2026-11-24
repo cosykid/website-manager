@@ -32,10 +32,9 @@ export const cardGridDefinition = defineComponent({
             label: "Image",
             fields: {
               url: {
-                kind: "url",
+                kind: "image",
                 label: "Image address",
                 required: true,
-                placeholder: "/seed/photo.svg or https://…",
               },
               alt: {
                 kind: "text",

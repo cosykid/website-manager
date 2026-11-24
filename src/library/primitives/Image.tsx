@@ -11,8 +11,8 @@ type ImageProps = {
  * was uploaded.
  *
  * This is a plain <img>, not next/image. Editors can paste an address from
- * any host, and next/image only accepts hosts listed in next.config.ts. With
- * a media library on a known host, next/image would be the better choice.
+ * any host, and next/image only accepts hosts listed in next.config.ts. An
+ * uploaded image has already been made small enough for a page.
  */
 export function Image({ src, alt }: ImageProps) {
   return (

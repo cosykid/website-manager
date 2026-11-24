@@ -39,7 +39,7 @@ Other commands:
 | Command | What it does |
 | --- | --- |
 | `npm run seed` | Adds any missing demo site or page. Never overwrites a page you have edited. |
-| `npm run seed -- --reset` | Deletes every site and page, then seeds again. |
+| `npm run seed -- --reset` | Deletes every site, page and uploaded image, then seeds again. |
 | `npm test` | Runs the unit tests (Node's built-in test runner). |
 | `npm run typecheck` / `npm run lint` | TypeScript and ESLint. |
 | `npm run build` then `npm start` | Production build. This is where pages are pre-rendered: `npm run dev` renders a page each time it is asked for. |
@@ -68,7 +68,8 @@ they do not clash with ones you may already have running.
 2. Click the big heading in the preview. Its form opens. Change the heading
    and the preview follows as you type. Nothing is public until **Save page**;
    **View page** opens the live page in a new tab.
-3. Choose the card grid in the tree, and add a card.
+3. Choose the card grid in the tree, and add a card. Choose **Upload image**
+   and pick any photo. It is made smaller, uploaded and shown in the preview.
 4. Drag a row of the tree above or below another, into a Section or out of
    one. A line shows where it will go, and Esc calls it off. On a touch screen,
    drag it by its six dots. Then choose **Undo**. The arrows and **Placed in**
@@ -117,13 +118,14 @@ they do not clash with ones you may already have running.
 | --- | --- |
 | `src/page-model` | The page JSON: its types, pure functions that edit the tree, shape checks, and reading and writing a page as a file. Also how a site's pages nest, and the messages the editor and its preview exchange. No React, no database. |
 | `src/library` | The shared components. Each has a definition (data) and a React component. `primitives/` holds Button, Heading and Image. `validate.ts` checks values against definitions. |
+| `src/images` | Uploaded images: which files are taken, and the address each one gets. |
 | `src/site` | The Site and Theme types, theme to CSS variables, and the contrast check. |
 | `src/db` | The MongoDB connection and every query. |
 | `src/cache` | The rendered public pages: the Redis connection, the cache Next.js keeps them in, and the pre-rendering. |
 | `src/renderer` | `RenderTree`, the site header and footer, and the styles shared by all sites. `preview/` is the page the editor shows in its preview frame. |
 | `src/manager` | The manager's screens: page editor, page list, outline, dragging, generated forms, preview pane, component picker, JSON import and export, server actions. |
 | `src/app/(manager)` | Manager routes. |
-| `src/app/(sites)` | The one public route, and the preview route the editor frames. |
+| `src/app/(sites)` | The one public route, the route that serves uploaded images, and the preview route the editor frames. |
 | `src/proxy.ts` | Sends each hostname to the manager or to a site. |
 | `src/instrumentation.ts` | Runs when a server starts, and has the public pages pre-rendered. |
 | `seed/`, `scripts/seed.ts` | The two demo sites and their pages as JSON, and the script that checks and loads them. |
@@ -132,9 +134,10 @@ they do not clash with ones you may already have running.
 One rule keeps the two halves apart: **the manager never imports a React
 component from the library, and nothing outside `src/manager` imports from
 it.** The manager only reads definitions, which are plain data. The public
-route imports only `renderer`, `library`, `site`, `db` and `page-model`. That
-is what "renderable without the manager" means here: the manager's code could
-be deleted, or deployed separately, and stored pages would still render.
+route imports only `renderer`, `library`, `site`, `db` and `page-model`, and
+the image route only `db` and `images`. That is what "renderable without the
+manager" means here: the manager's code could be deleted, or deployed
+separately, and stored pages and their images would still show.
 
 The editor's live preview keeps to the rule. It is a page in the renderer's
 half, shown in a frame. The manager knows its address and the messages they
@@ -246,12 +249,13 @@ A component is two things in one folder of `src/library`:
   editable props as fields.
 - **A React component** that receives those props.
 
-There are five kinds of field (`src/library/types.ts`):
+There are six kinds of field (`src/library/types.ts`):
 
 | Kind | Stored as | Used for |
 | --- | --- | --- |
 | `text` | string | A line of text, or a paragraph with `multiline`. Can be `required`. |
-| `url` | string | A link or image address. Must be a path on the site (`/about`) or start with `http://` or `https://`. |
+| `url` | string | Where a link goes. Must be a path on the site (`/about`) or start with `http://` or `https://`. |
+| `image` | string | An image's address, under the same rules as a link's. Its form shows the picture, and can upload a file and fill the address in. |
 | `select` | one of its option values | A fixed choice, such as a section's layout. Has a `default`. |
 | `group` | object | Fields that belong together, such as an image's address and alt text. An `optional` group can be left out, like a card's link. |
 | `list` | array | A repeatable item, such as the cards in a card grid. |
@@ -509,9 +513,28 @@ fonts. On other systems the sites fall back to similar fonts, and still
 differ in colour, case, weight and shape. Each theme would ship its own font
 files in a real product.
 
+**Uploaded images are kept in MongoDB.** The `images` collection holds the
+files, and `/images/<id>.jpg` serves them on every site. The database is
+already there and every server can reach it. A folder on disk would be lost on
+a host such as Vercel, and file storage such as S3 needs an account and keys
+to run this project at all. An image's id is worked out from its bytes, so the
+same picture is stored once and a browser can keep it for good. A page still
+holds only an address: the page format did not change, and a picture can also
+come from any other site. The cost is that a database is an expensive place to
+serve files from. With real traffic I would put a CDN in front, then move the
+files to file storage, which changes `src/db/images.ts` and little else.
+
+**The browser makes an image smaller before uploading it.** A photo straight
+from a camera can be 8 MB. The browser draws it again at no more than 1600
+pixels a side, so an editor never has to resize one, and the server needs no
+image library. A redrawn photo also loses the place it was taken, which a
+camera writes into the file. The server does not take the browser's word for
+any of this. It accepts up to 4 MB, and tells what a file is from its first
+bytes: JPEG, PNG, WebP or GIF. SVG is refused, because it can hold scripts.
+
 **A plain `<img>`, not `next/image`.** Editors can paste an image address
-from any host, and `next/image` only accepts hosts listed in the config. With
-a media library on a known host, `next/image` would be the better choice.
+from any host, and `next/image` only accepts hosts listed in the config. What
+it would do for an uploaded image is mostly done by the step above.
 
 **"Light" is called "Subtle" in the manager.** The brief names the section
 backgrounds none, light and brand, and those are the stored values. On the
@@ -545,12 +568,13 @@ problems are shown with an icon and words, never colour alone.
 - **Stretch goals not done:** deploying to Vercel, a data-driven component
   and draft/publish. Save page publishes straight away, and the editor says
   so.
-- **Stretch goal partly done:** tests. There are 68 unit tests on the page
-  tree, the tree of pages, validation, page details, page files, preview
-  messages, stored pages and contrast. None render components or drive a
+- **Stretch goal partly done:** tests. There are 73 unit tests on the page
+  tree, the tree of pages, validation, page details, page files, uploaded
+  images, preview messages, stored pages and contrast. None render components or drive a
   browser.
-- Deleting a page, editing a site or its theme in the manager, and uploading
-  images. Images are addresses.
+- Deleting a page, and editing a site or its theme in the manager.
+- Choosing from the images already uploaded, and clearing out those no page
+  uses any more. An image stays in the database once it is there.
 - Dragging in the preview itself, and dragging a component to another page. A
   component moves within its page, in the tree.
 - Each theme has one appearance. A site does not follow the visitor's light
@@ -571,7 +595,7 @@ _To fill in before submitting._
 _To review and complete before submitting._
 
 - **Claude Code** (Anthropic's coding agent, models Claude Fable 5.2 and, for
-  the pre-rendering and the dragging, Claude Opus 5.5). It compared approaches
+  the pre-rendering, the dragging and the image uploads, Claude Opus 5.5). It compared approaches
   with me, then wrote the code, tests, seed content, the page JSON guide in
   `docs/` and the first draft of this README, and tested the app in a browser.
   I set the direction and made the calls, for example choosing a plain field

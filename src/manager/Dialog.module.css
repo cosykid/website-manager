@@ -1,5 +1,5 @@
-/* The manager's dialogs: "Add a component" and "Page JSON". A dialog floats
-   above the page, so it has a shadow. */
+/* The manager's dialogs, such as "Add a component" and "Page JSON". A dialog
+   floats above the page, so it has a shadow. */
 .dialog {
   width: min(30rem, calc(100% - 2rem));
   padding: 0;
@@ -12,6 +12,18 @@
 
 .dialog::backdrop {
   background: rgb(0 0 0 / 0.4);
+}
+
+/* Something that is done in a moment needs no dialog to flash past. */
+.dialog[data-busy],
+.dialog[data-busy]::backdrop {
+  animation: appear 150ms 350ms backwards;
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+  }
 }
 
 .content {

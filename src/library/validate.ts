@@ -21,6 +21,7 @@ export function emptyValue(field: Field): unknown {
   switch (field.kind) {
     case "text":
     case "url":
+    case "image":
       return "";
     case "select":
       return field.default;
@@ -108,7 +109,8 @@ function validateValue(field: Field, value: unknown, path: string): Issue[] {
       return [];
     }
 
-    case "url": {
+    case "url":
+    case "image": {
       if (typeof value !== "string") {
         return [{ path, message: `${field.label} must be text.` }];
       }

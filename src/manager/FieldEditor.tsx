@@ -15,6 +15,7 @@ import { isPlainObject } from "@/page-model/shape";
 import { Gap, Held } from "./Dragging";
 import styles from "./FieldEditor.module.css";
 import { Icon } from "./Icon";
+import { ImageInput } from "./ImageInput";
 import { useDragToMove } from "./useDragToMove";
 
 /**
@@ -43,7 +44,7 @@ type Shared = {
   idPrefix: string;
 };
 
-type FieldEditorProps<F extends Field = Field> = {
+export type FieldEditorProps<F extends Field = Field> = {
   field: F;
   value: unknown;
   onChange: Change;
@@ -94,6 +95,8 @@ function FieldEditor(props: FieldEditorProps) {
     case "text":
     case "url":
       return <TextInput {...props} field={field} />;
+    case "image":
+      return <ImageInput {...props} field={field} />;
     case "select":
       return <SelectInput {...props} field={field} />;
     case "group":

@@ -11,11 +11,14 @@ import type { ComponentInstance, PageDocument } from "./types";
  */
 
 /**
- * The largest page file the manager takes. A page is a few kilobytes. A server
- * action accepts a request of up to 1 MB, so a file of this size still fits
- * with room to spare.
+ * The largest page file the manager takes. A page is a few kilobytes, so this
+ * is room to spare, and well within the largest request a server action
+ * accepts (see next.config.ts).
  */
 export const MAX_PAGE_FILE_BYTES = 500_000;
+
+/** What a file chooser is told to offer, in the form <input accept> takes. */
+export const PAGE_FILE_ACCEPT = "application/json,.json";
 
 export const PAGE_FILE_TOO_LARGE =
   "The file is larger than 500 KB, which is more than a page file can be.";

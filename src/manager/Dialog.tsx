@@ -10,6 +10,12 @@ type DialogProps = {
   titleId: string;
   /** What the button that closes the dialog says, such as "Cancel". */
   closeLabel: string;
+  /**
+   * The dialog is open while something is under way, and closes when it is
+   * done. A click beside it then does nothing, so that it is not called off by
+   * accident.
+   */
+  busy?: boolean;
   onClose: () => void;
   children: ReactNode;
 };
@@ -21,7 +27,15 @@ type DialogProps = {
  * It is a native <dialog>: the browser keeps keyboard focus inside it, closes
  * it on Escape, and puts focus back where it was afterwards.
  */
-export function Dialog({ open, title, titleId, closeLabel, onClose, children }: DialogProps) {
+export function Dialog({
+  open,
+  title,
+  titleId,
+  closeLabel,
+  busy = false,
+  onClose,
+  children,
+}: DialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   // A dialog is opened and closed by calling it, not by a prop, so follow
@@ -37,11 +51,15 @@ export function Dialog({ open, title, titleId, closeLabel, onClose, children }: 
     <dialog
       ref={dialogRef}
       className={styles.dialog}
+      data-busy={busy || undefined}
       aria-labelledby={titleId}
-      onClose={onClose}
+      // The browser can report a close late, once the dialog is open again.
+      onClose={(event) => {
+        if (!event.currentTarget.open) onClose();
+      }}
       // A click on the dimmed area outside the box lands on the dialog itself.
       onClick={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (event.target === event.currentTarget && !busy) onClose();
       }}
     >
       <div className={styles.content}>

@@ -12,6 +12,13 @@ const nextConfig: NextConfig = {
   cacheHandler: path.resolve("src/cache/page-cache.mts"),
   cacheMaxMemorySize: 0,
 
+  experimental: {
+    // An image is uploaded through a server action. This is the largest one
+    // that is stored (MAX_IMAGE_BYTES in src/images/image-file.ts), and room
+    // for what a form adds around it. The default is 1 MB.
+    serverActions: { bodySizeLimit: "4.2mb" },
+  },
+
   // Hides the round Next.js badge shown in a corner during development. The
   // editor's preview is a second page in a frame, so the badge would also
   // appear inside the picture of the site. Errors are still reported.
