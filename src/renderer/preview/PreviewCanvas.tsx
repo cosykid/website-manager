@@ -79,13 +79,18 @@ export function PreviewCanvas({ initialContent }: { initialContent: ComponentIns
 
     const box = target.getBoundingClientRect();
     const inView = box.top >= 0 && box.bottom <= window.innerHeight;
-    if (inView) return;
+    if (inView) {
+      // Stay here. A scroll to where it was before may still be under way, and
+      // this stops it.
+      window.scrollTo({ top: window.scrollY, behavior: "instant" });
+      return;
+    }
 
     // Leave a little of the page above it showing, and room for its ring.
     const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     window.scrollTo({
       top: window.scrollY + box.top - 24,
-      behavior: calm ? "auto" : "smooth",
+      behavior: calm ? "instant" : "smooth",
     });
   }, [selectedId, place?.parentId, place?.beforeId]);
 
