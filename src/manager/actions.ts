@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { prerenderPage } from "@/cache/prerender";
 import { createPage, savePage } from "@/db/pages";
 import { getSite } from "@/db/sites";
 import { definitions } from "@/library/definitions";
@@ -24,9 +26,11 @@ import type { Site } from "@/site/types";
  * (The brief asks for no sign-in. With one, the check would start here.)
  */
 
-/** Puts the stored copy of a public page out of date, now that the page has changed. */
+/** Has the stored copy of a public page replaced, now that the page has changed. */
 function refreshPublicPage(site: Site, path: string): void {
   for (const domain of site.domains) revalidatePath(publicRoute(domain, path));
+  // Once the editor has their answer, so that they do not wait for this.
+  after(() => prerenderPage(site, path));
 }
 
 export type CreatePageResult =

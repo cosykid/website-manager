@@ -26,6 +26,15 @@ export async function listPages(siteId: string): Promise<Page[]> {
   return records.map(toPage);
 }
 
+/** Where every page of every site is, without its content. */
+export async function listPageAddresses(): Promise<{ siteId: string; path: string }[]> {
+  const pages = await pagesCollection();
+  return pages
+    .find()
+    .project<{ siteId: string; path: string }>({ _id: 0, siteId: 1, path: 1 })
+    .toArray();
+}
+
 /** How many pages each site has, as { siteId: count }, for the list of sites. */
 export async function countPagesBySite(): Promise<Record<string, number>> {
   const pages = await pagesCollection();

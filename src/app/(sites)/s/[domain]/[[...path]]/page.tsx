@@ -8,8 +8,8 @@ import { RenderTree } from "@/renderer/RenderTree";
 type Props = PageProps<"/s/[domain]/[[...path]]">;
 
 // Pages are rendered once and stored (see src/cache), not on every request. A
-// save in the manager puts its page out of date. The hour is for a change made
-// some other way, such as by hand in MongoDB.
+// save in the manager has its page rendered again straight away. The hour is
+// for a change made some other way, such as by hand in MongoDB.
 export const dynamic = "force-static";
 export const revalidate = 3600;
 
