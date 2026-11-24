@@ -75,12 +75,15 @@ export function fillTree(
 ): ComponentInstance[] {
   return nodes.map((node) => {
     const definition = definitions[node.type];
-    const filled: ComponentInstance = {
-      id: node.id,
-      type: node.type,
-      // An instance of a component that no longer exists is kept as it is.
-      props: definition ? fillGroup(definition.fields, node.props) : node.props,
-    };
+    // An instance of a component that no longer exists is kept as it is.
+    const props = definition ? fillGroup(definition.fields, node.props) : node.props;
+    // A name is the editor's own label for it, so there is nothing to fill in.
+    // It is only tidied, and left out when it is empty.
+    const name = node.name?.trim();
+
+    const filled: ComponentInstance = name
+      ? { id: node.id, type: node.type, name, props }
+      : { id: node.id, type: node.type, props };
     if (node.children) filled.children = fillTree(node.children, definitions);
     return filled;
   });

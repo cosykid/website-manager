@@ -172,6 +172,44 @@ export function moveInstanceTo(
   return insertInstance(rest, to.parentId, instance, to.beforeId);
 }
 
+/**
+ * Gives one instance a name, or takes its name away when the name is empty.
+ * An instance with no name is called by the kind of component it is.
+ */
+export function renameInstance(
+  nodes: ComponentInstance[],
+  id: string,
+  name: string,
+): ComponentInstance[] {
+  return nodes.map((node) => {
+    if (node.id === id) {
+      const renamed = { ...node };
+      if (name.trim() === "") delete renamed.name;
+      else renamed.name = name.trim();
+      return renamed;
+    }
+    if (node.children) {
+      return { ...node, children: renameInstance(node.children, id, name) };
+    }
+    return node;
+  });
+}
+
+/**
+ * A copy of an instance and everything inside it. Ids must be unique on a
+ * page, so every instance in the copy gets a new one from `newId`.
+ */
+export function copyInstance(
+  instance: ComponentInstance,
+  newId: () => string,
+): ComponentInstance {
+  const copy: ComponentInstance = { ...instance, id: newId() };
+  if (instance.children) {
+    copy.children = instance.children.map((child) => copyInstance(child, newId));
+  }
+  return copy;
+}
+
 /** Replaces the props of one instance. */
 export function updateProps(
   nodes: ComponentInstance[],

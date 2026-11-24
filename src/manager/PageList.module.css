@@ -69,6 +69,11 @@
   outline-offset: -2px;
 }
 
+/* Out of sight while its title is typed over in its place. */
+.page[hidden] {
+  display: none;
+}
+
 /* The page that is open: filled and bolder, two signs and not colour alone. */
 .page[aria-current="page"] {
   --row-fill: var(--selected);

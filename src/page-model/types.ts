@@ -13,6 +13,11 @@ export type ComponentInstance = {
   id: string;
   /** Which component to render. Matches a definition's `type` in src/library. */
   type: string;
+  /**
+   * What an editor has called it, such as "Hero", to tell it from others of
+   * its kind in the manager. Visitors never see it.
+   */
+  name?: string;
   /** The values an editor entered. Their shape is described by the definition's fields. */
   props: Record<string, unknown>;
   /** Present only on components that can hold others, such as Section. */

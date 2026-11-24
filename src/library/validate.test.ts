@@ -152,6 +152,16 @@ test("a page that leaves optional props out is valid once it is filled", () => {
   assert.deepEqual(filled[0].children?.[0].props, { heading: "Welcome", message: "" });
 });
 
+test("filling keeps the name an editor gave a component, without spaces around it", () => {
+  const page: ComponentInstance[] = [
+    { id: "intro", type: "banner", name: " Hero ", props: { heading: "Welcome" } },
+    { id: "plain", type: "banner", name: "  ", props: { heading: "Welcome" } },
+  ];
+  const filled = fillTree(page, definitions);
+  assert.equal(filled[0].name, "Hero");
+  assert.equal("name" in filled[1], false);
+});
+
 test("filling does not hide a missing required prop", () => {
   const page: ComponentInstance[] = [{ id: "intro", type: "banner", props: {} }];
   const issues = validateTree(fillTree(page, definitions), definitions);

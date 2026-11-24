@@ -1,14 +1,17 @@
 "use client";
 
-import { useState, type PointerEvent } from "react";
+import { useState, type KeyboardEvent, type PointerEvent } from "react";
 import type { ComponentDefinition } from "@/library/types";
 import type { IssuesByInstance } from "@/library/validate";
-import { findInstance, type Place } from "@/page-model/tree";
+import { findAncestors, findInstance, type Place } from "@/page-model/tree";
 import type { ComponentInstance } from "@/page-model/types";
+import { keyRequest } from "./component-keys";
 import { Gap, Held } from "./Dragging";
 import { Icon } from "./Icon";
-import { labelOf, summaryOf } from "./instance-names";
+import { labelOf, nameOf, summaryOf } from "./instance-names";
+import { Menu, type MenuItem } from "./Menu";
 import styles from "./Outline.module.css";
+import { RenameInput } from "./RenameInput";
 import { atDepth } from "./tree-depth";
 import { useDragToMove, type Drag } from "./useDragToMove";
 
@@ -24,9 +27,13 @@ import { useDragToMove, type Drag } from "./useDragToMove";
  * opens to make room. The same moves can be made without dragging, from the
  * component's form.
  *
+ * A row works the way one does in a file browser. Double-clicking it, or F2,
+ * renames the component. Its "more" button and a right click open the same
+ * menu: rename, duplicate, move and remove, each with the keys that do it.
+ *
  * Each row has a position number (1, 2, 2.1) that only screen readers read
- * out. It gives every row and button its own name, such as "Remove Section 2",
- * where the eye has the indent to go by.
+ * out. It gives every row and button its own name, such as "More for Section
+ * 2", where the eye has the indent to go by.
  */
 
 type OutlineProps = {
@@ -43,10 +50,19 @@ type OutlineProps = {
   onMove: (id: string, place: Place) => void;
   /** Told where a component being dragged would go, and null once it is over. */
   onDrag: (dragged: { id: string; place: Place } | null) => void;
+  /** Moves a component one place among its neighbours. */
+  onStep: (id: string, direction: "up" | "down") => void;
+  /** Gives a component a name, or takes its name away with "". */
+  onRename: (id: string, name: string) => void;
+  /** Puts a copy of a component straight after it. */
+  onDuplicate: (id: string) => void;
   onRemove: (id: string) => void;
   /** Opens the component picker, to add inside the instance with this id. */
   onAddInside: (parentId: string) => void;
 };
+
+/** A row's menu that is open: whose it is, and where on the screen it goes. */
+type OpenMenu = { id: string; x: number; y: number };
 
 /**
  * The HTML id of a component's row. The editor uses it to put keyboard focus
@@ -73,6 +89,66 @@ export function Outline(props: OutlineProps) {
   // Where it would drop: inside another component, or on the page itself.
   const place = drag ? toPlace(drag.target) : null;
 
+  // The component whose name is being typed over, if any.
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [menu, setMenu] = useState<OpenMenu | null>(null);
+  const menuNode = menu ? findInstance(content, menu.id) : undefined;
+
+  function endRename(node: ComponentInstance, typed: string | null) {
+    setRenamingId(null);
+    if (typed === null) return;
+
+    // Without a name, a component is called by its kind. So typing the kind
+    // is the way to take a name away, and so is leaving the name empty.
+    const name = typed.trim() === labelOf(node, definitions) ? "" : typed.trim();
+    if (name !== (node.name ?? "")) props.onRename(node.id, name);
+  }
+
+  /** What the menu of one component offers. */
+  function menuItems(node: ComponentInstance): MenuItem[] {
+    const siblings = findAncestors(content, node.id).at(-1)?.children ?? content;
+    const holdsOthers = definitions[node.type]?.acceptsChildren === true;
+    // A menu only ever opens in the browser, so `navigator` is there.
+    const onMac = navigator.platform.startsWith("Mac");
+
+    const items: MenuItem[] = [
+      { label: "Rename", keys: "F2", onChoose: () => setRenamingId(node.id) },
+      {
+        label: "Duplicate",
+        keys: onMac ? "⌘D" : "Ctrl+D",
+        onChoose: () => props.onDuplicate(node.id),
+      },
+    ];
+    if (holdsOthers) {
+      items.push({
+        label: "Add a component inside",
+        onChoose: () => props.onAddInside(node.id),
+      });
+    }
+    items.push(
+      "line",
+      {
+        label: "Move up",
+        keys: onMac ? "⌥↑" : "Alt+↑",
+        disabled: siblings[0] === node,
+        onChoose: () => props.onStep(node.id, "up"),
+      },
+      {
+        label: "Move down",
+        keys: onMac ? "⌥↓" : "Alt+↓",
+        disabled: siblings.at(-1) === node,
+        onChoose: () => props.onStep(node.id, "down"),
+      },
+      "line",
+      {
+        label: "Remove",
+        keys: onMac ? "⌫" : "Delete",
+        onChoose: () => props.onRemove(node.id),
+      },
+    );
+    return items;
+  }
+
   return (
     <div
       ref={list}
@@ -94,6 +170,11 @@ export function Outline(props: OutlineProps) {
         intoId={place?.parentId ?? null}
         landedId={landedId}
         startDrag={startDrag}
+        renamingId={renamingId}
+        menuId={menu?.id ?? null}
+        startRename={setRenamingId}
+        endRename={endRename}
+        showMenu={setMenu}
       />
 
       {drag && dragged && (
@@ -109,8 +190,25 @@ export function Outline(props: OutlineProps) {
           </span>
         </Held>
       )}
+
+      {menu && menuNode && (
+        <Menu
+          label={nameOf(menuNode, definitions)}
+          x={menu.x}
+          y={menu.y}
+          items={menuItems(menuNode)}
+          onClose={() => setMenu(null)}
+        />
+      )}
     </div>
   );
+}
+
+/** Moves keyboard focus from one row to the row above it (-1) or below (1). */
+function focusNextRow(row: HTMLElement, step: -1 | 1) {
+  const list = row.closest("[data-drag-list]");
+  const rows = [...(list?.querySelectorAll<HTMLElement>('button[id^="row-"]') ?? [])];
+  rows[rows.indexOf(row) + step]?.focus();
 }
 
 /** A place on the page, as the name of a gap, and back again. */
@@ -137,6 +235,14 @@ type LevelProps = OutlineProps & {
   intoId: string | null;
   landedId: string | null;
   startDrag: (press: PointerEvent<HTMLElement>, id: string) => void;
+  renamingId: string | null;
+  /** The component whose menu is open, if any. */
+  menuId: string | null;
+  startRename: (id: string) => void;
+  /** `typed` is the name as it was typed, or null if it was given up. */
+  endRename: (node: ComponentInstance, typed: string | null) => void;
+  /** Opens a row's menu, or closes the open one with null. */
+  showMenu: (menu: OpenMenu | null) => void;
 };
 
 function Level(props: LevelProps) {
@@ -172,7 +278,8 @@ type ItemProps = LevelProps & { node: ComponentInstance; number: string };
 function Item(props: ItemProps) {
   const { node, number, definitions, parentId, depth, drag, startDrag } = props;
 
-  const label = labelOf(node, definitions);
+  // What the row calls it: the name an editor gave it, or else its kind.
+  const label = nameOf(node, definitions);
   // Two sections on one page are told apart by number: "Section 2".
   const name = `${label} ${number}`;
 
@@ -180,6 +287,39 @@ function Item(props: ItemProps) {
   const children = node.children ?? [];
   const isFolded = holdsOthers && props.folded.includes(node.id);
   const isSelected = node.id === props.selectedId;
+  const isRenaming = node.id === props.renamingId;
+  const hasMenu = node.id === props.menuId;
+
+  /** The keys that work on a row while it has keyboard focus. */
+  function handleKey(event: KeyboardEvent<HTMLButtonElement>) {
+    const { key } = event;
+    const row = event.currentTarget;
+    const asked = keyRequest(event);
+
+    if (asked === "rename") {
+      props.startRename(node.id);
+    } else if (asked === "duplicate") {
+      props.onDuplicate(node.id);
+    } else if (asked === "remove") {
+      // The row is about to go, and keyboard focus would go with it.
+      focusNextRow(row, -1);
+      props.onRemove(node.id);
+    } else if (asked === "up" || asked === "down") {
+      props.onStep(node.id, asked);
+    } else if (key === "ArrowUp") {
+      focusNextRow(row, -1);
+    } else if (key === "ArrowDown") {
+      focusNextRow(row, 1);
+    } else if (key === "ArrowLeft" && holdsOthers && !isFolded) {
+      props.onFold(node.id, true);
+    } else if (key === "ArrowRight" && isFolded) {
+      props.onFold(node.id, false);
+    } else {
+      return;
+    }
+    // Keeps the browser from also acting on the key: Ctrl+D adds a bookmark.
+    event.preventDefault();
+  }
 
   return (
     <li style={atDepth(depth)} data-dragged={node.id === drag?.id || undefined}>
@@ -191,6 +331,15 @@ function Item(props: ItemProps) {
           data-drag-row
           data-selected={isSelected || undefined}
           data-landed={node.id === props.landedId || undefined}
+          data-menu-open={hasMenu || undefined}
+          onContextMenu={(event) => {
+            // While a name is typed, a right click is for copy and paste.
+            if (isRenaming) return;
+            event.preventDefault();
+            // The menu gives focus back to the row when it closes.
+            document.getElementById(rowId(node.id))?.focus();
+            props.showMenu({ id: node.id, x: event.clientX, y: event.clientY });
+          }}
         >
           <span
             className={styles.handle}
@@ -216,13 +365,26 @@ function Item(props: ItemProps) {
             <span className={styles.fold} />
           )}
 
+          {isRenaming && (
+            <RenameInput
+              value={label}
+              label={`Name of ${name}`}
+              rowId={rowId(node.id)}
+              onDone={(typed) => props.endRename(node, typed)}
+            />
+          )}
+
           <button
             type="button"
             id={rowId(node.id)}
             className={styles.select}
+            // Out of sight while the name is typed, in the same place.
+            hidden={isRenaming}
             aria-current={isSelected || undefined}
             onPointerDown={(press) => startDrag(press, node.id)}
             onClick={() => props.onSelect(node.id)}
+            onDoubleClick={() => props.startRename(node.id)}
+            onKeyDown={handleKey}
           >
             <span className="visually-hidden">{number}</span>{" "}
             <RowText
@@ -234,15 +396,24 @@ function Item(props: ItemProps) {
           </button>
 
           {/* Drawn only for a row under the pointer or holding keyboard focus,
-              and always on a touch screen: see .remove in the stylesheet. */}
-          <div className={styles.remove}>
+              and always on a touch screen: see .more in the stylesheet. */}
+          <div className={styles.more}>
             <button
               type="button"
               className="icon-button"
-              aria-label={`Remove ${name}`}
-              onClick={() => props.onRemove(node.id)}
+              aria-label={`More for ${name}`}
+              title="Rename, duplicate, move, remove"
+              aria-haspopup="menu"
+              aria-expanded={hasMenu}
+              onClick={(event) => {
+                // The menu opens under the button, and a second press closes it.
+                const button = event.currentTarget.getBoundingClientRect();
+                props.showMenu(
+                  hasMenu ? null : { id: node.id, x: button.left, y: button.bottom + 4 },
+                );
+              }}
             >
-              <Icon name="remove" />
+              <Icon name="more" />
             </button>
           </div>
 
@@ -292,10 +463,13 @@ type RowTextProps = {
   problems: number;
 };
 
-/** What a row says: the kind of component, its summary, and anything to note. */
+/** What a row says: what the component is called, a note, and anything to flag. */
 function RowText({ node, definitions, isFolded, problems }: RowTextProps) {
   const holdsOthers = definitions[node.type]?.acceptsChildren === true;
-  const summary = summaryOf(node, definitions);
+  // Beside a name an editor gave, the note says what kind of component it is.
+  // Otherwise the name already says that, and the note is the summary: a card
+  // grid's title, or a section's layout.
+  const note = node.name ? labelOf(node, definitions) : summaryOf(node, definitions);
   const inside = node.children?.length ?? 0;
 
   // The spaces keep the parts apart when a screen reader reads them out:
@@ -303,9 +477,9 @@ function RowText({ node, definitions, isFolded, problems }: RowTextProps) {
   return (
     <span className="tree-text">
       <span className="tree-label" data-strong={holdsOthers || undefined}>
-        {labelOf(node, definitions)}
+        {nameOf(node, definitions)}
       </span>{" "}
-      {summary && <span className="tree-note">{summary}</span>}{" "}
+      {note && <span className="tree-note">{note}</span>}{" "}
       {isFolded && inside > 0 && (
         <span className={styles.count}>
           {inside}

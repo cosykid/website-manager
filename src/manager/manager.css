@@ -418,6 +418,33 @@ a:hover {
   white-space: nowrap;
 }
 
+/* A name being typed over, in the place where it is shown: see
+   RenameInput.tsx. Its text starts where the name's did.
+
+   An input comes with a width of its own, of about twenty characters. This
+   one starts from nothing and grows into the room there is, so it can never
+   make its row wider. */
+.tree-rename {
+  flex: 1;
+  width: 0;
+  min-width: 0;
+  height: 1.625rem;
+  margin-right: 0.25rem;
+  padding: 0 0.3125rem;
+  border: 1px solid var(--focus);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 550;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.tree-rename:focus-visible {
+  outline-offset: 0;
+}
+
 /* "Unsaved", beside a page whose changes are not saved. */
 .unsaved {
   flex: none;

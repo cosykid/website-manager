@@ -91,6 +91,12 @@ button.fold:focus-visible {
   outline: none;
 }
 
+/* Out of sight while its name is typed over: the button stays on the page so
+   that keyboard focus has somewhere to come back to. */
+.select[hidden] {
+  display: none;
+}
+
 /* How many components a folded row is hiding. */
 .count {
   flex: none;
@@ -113,7 +119,7 @@ button.fold:focus-visible {
    its text. Its background is the row's own colour, fading in from the left,
    which hides the text under it. Only the button itself takes a click: the
    rest lets it through to the row. It stays inside the row's ring. */
-.remove {
+.more {
   position: absolute;
   inset: 2px 2px 2px auto;
   display: flex;
@@ -125,19 +131,30 @@ button.fold:focus-visible {
   pointer-events: none;
 }
 
-.remove button {
+.more button {
   pointer-events: auto;
 }
 
-.row:hover .remove,
-.row:focus-within .remove {
+/* Three dots, drawn with a thicker line like the six of the handle. */
+.more svg {
+  stroke-width: 3;
+}
+
+.row:hover .more,
+.row:focus-within .more,
+.row[data-menu-open] .more {
   opacity: 1;
+}
+
+/* A row whose menu is open stays marked as if the pointer were still on it. */
+.row[data-menu-open]:not([data-selected]) {
+  --row-fill: color-mix(in srgb, var(--hover), var(--selected));
 }
 
 /* A touch screen has no pointer to hover with. There the button always shows,
    and takes its own space in the row. */
 @media (hover: none) {
-  .remove {
+  .more {
     position: static;
     flex: none;
     padding-left: 0;
@@ -176,7 +193,7 @@ button.fold:focus-visible {
 
 /* Nothing but the rows and the room between them matters now. The button keeps
    its place, as a row must not change its height during a drag. */
-.outline[data-dragging] .remove {
+.outline[data-dragging] .more {
   visibility: hidden;
 }
 
@@ -226,7 +243,7 @@ button.fold:focus-visible {
   }
 
   /* Out of the way while a dropped row turns from blue to its usual colour. */
-  .row[data-landed] .remove {
+  .row[data-landed] .more {
     visibility: hidden;
   }
 }

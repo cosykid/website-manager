@@ -10,6 +10,11 @@ export function labelOf(node: ComponentInstance, definitions: Definitions): stri
   return definitions[node.type]?.label ?? "Unknown component";
 }
 
+/** What to call it: the name an editor gave it, or else the kind it is. */
+export function nameOf(node: ComponentInstance, definitions: Definitions): string {
+  return node.name || labelOf(node, definitions);
+}
+
 /**
  * The short text that tells it from others of its kind, taken from the field
  * its definition names: a card grid's title, or a section's chosen layout.

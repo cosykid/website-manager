@@ -14,6 +14,10 @@ const paths = {
   back: "m15 6-6 6 6 6",
   page: "M6 3h8l4 4v14H6zM14 3v4h4",
   image: "M4 5h16v14H4zM4 16l5-5 8 8M14 14l2-2 4 4M15 9h.01",
+  // A pencil.
+  rename: "M4 20h4L19 9l-4-4L4 16zM13 7l4 4",
+  // Three dots: more things to do. Drawn with a thicker line, like the six.
+  more: "M5 12h.01M12 12h.01M19 12h.01",
   // Six dots: something that can be dragged. Drawn with a thicker line.
   grip: "M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01",
 } as const;

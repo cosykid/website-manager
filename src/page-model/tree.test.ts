@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { isInstanceTree, isValidPath } from "./shape";
 import {
+  copyInstance,
   findAncestors,
   findInstance,
   findPlace,
@@ -9,6 +10,7 @@ import {
   moveInstance,
   moveInstanceTo,
   removeInstance,
+  renameInstance,
   updateProps,
 } from "./tree";
 import type { ComponentInstance } from "./types";
@@ -174,6 +176,35 @@ test("edits leave the original tree untouched", () => {
   assert.deepEqual(original, samplePage());
 });
 
+test("renameInstance names a nested instance and trims the name", () => {
+  const result = renameInstance(samplePage(), "inner", "  Sponsors ");
+  assert.equal(findInstance(result, "inner")?.name, "Sponsors");
+  // Nothing else about it changes.
+  assert.deepEqual(ids(findInstance(result, "inner")?.children ?? []), ["deep"]);
+});
+
+test("renameInstance takes the name away when it is given an empty one", () => {
+  const named = renameInstance(samplePage(), "last", "Sign-up");
+  const result = renameInstance(named, "last", "   ");
+  assert.equal("name" in (findInstance(result, "last") ?? {}), false);
+  assert.deepEqual(result, samplePage());
+});
+
+test("copyInstance copies everything inside, with a new id for each instance", () => {
+  const outer = samplePage()[0];
+  let count = 0;
+  const copy = copyInstance(outer, () => `copy-${++count}`);
+
+  assert.equal(copy.id, "copy-1");
+  assert.deepEqual(ids(copy.children ?? []), ["copy-2", "copy-3"]);
+  assert.deepEqual(ids(copy.children?.[1].children ?? []), ["copy-4"]);
+  // The values come along unchanged.
+  assert.deepEqual(copy.children?.[0].props, { title: "Squad" });
+
+  // Put beside the original, the page still has no id twice.
+  assert.equal(isInstanceTree(insertInstance(samplePage(), null, copy)), true);
+});
+
 test("isInstanceTree accepts a well-formed tree", () => {
   assert.equal(isInstanceTree(samplePage()), true);
   assert.equal(isInstanceTree([]), true);
@@ -183,6 +214,7 @@ test("isInstanceTree rejects malformed content", () => {
   assert.equal(isInstanceTree("not a list"), false);
   assert.equal(isInstanceTree([{ id: "a", type: "banner" }]), false);
   assert.equal(isInstanceTree([{ id: "", type: "banner", props: {} }]), false);
+  assert.equal(isInstanceTree([{ id: "a", type: "banner", name: 7, props: {} }]), false);
   assert.equal(
     isInstanceTree([{ id: "a", type: "banner", props: {}, children: "x" }]),
     false,

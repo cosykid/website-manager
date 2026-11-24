@@ -149,6 +149,11 @@
   outline-offset: -2px;
 }
 
+/* Out of sight while the title is typed over in its place. */
+.pageRow[hidden] {
+  display: none;
+}
+
 /* A component that is being dragged would drop on the page itself, and not
    inside another component. */
 .listPanel section:has([data-into-page]) .pageRow {
@@ -194,6 +199,22 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+}
+
+/* The component's name. A long one wraps, and leaves the buttons their room.
+   While it is typed over, it holds the input: see RenameInput.tsx. */
+.formTitle h2 {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* As tall as the heading's own line, so nothing below it moves. */
+.formTitle h2 :global(.tree-rename) {
+  height: 2rem;
+  margin-block: -0.25rem;
+  margin-left: -0.375rem;
 }
 
 /* The last icon lines up with the edge of the fields, not its button. */

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import type { ComponentDefinition } from "@/library/types";
 import {
   fillGroup,
@@ -13,6 +13,7 @@ import {
 import { checkPageDetails, PATH_TAKEN_MESSAGE } from "@/page-model/details";
 import type { PageLink } from "@/page-model/page-tree";
 import {
+  copyInstance,
   findAncestors,
   findInstance,
   findPlace,
@@ -20,16 +21,18 @@ import {
   moveInstance,
   moveInstanceTo,
   removeInstance,
+  renameInstance,
   updateProps,
   type Place,
 } from "@/page-model/tree";
 import type { ComponentInstance } from "@/page-model/types";
 import { savePageAction } from "./actions";
+import { keyRequest } from "./component-keys";
 import { ComponentPicker } from "./ComponentPicker";
 import { useDrafts, type PageValues } from "./Drafts";
 import { GroupFields } from "./FieldEditor";
 import { Icon } from "./Icon";
-import { labelOf } from "./instance-names";
+import { nameOf } from "./instance-names";
 import { Outline, rowId } from "./Outline";
 import { PageDetailsForm } from "./PageDetailsForm";
 import styles from "./PageEditor.module.css";
@@ -37,6 +40,7 @@ import { PageJsonDialog } from "./PageJsonDialog";
 import { PageList } from "./PageList";
 import { PlacedIn } from "./PlacedIn";
 import { PreviewPane } from "./PreviewPane";
+import { RenameInput } from "./RenameInput";
 import { SiteMark } from "./SiteMark";
 import { atDepth } from "./tree-depth";
 
@@ -125,6 +129,10 @@ export function PageEditor({
   const [picker, setPicker] = useState<{ parentId: string | null } | null>(null);
   // Whether the "Page JSON" dialog is open.
   const [jsonOpen, setJsonOpen] = useState(false);
+  // Whether the page's title is being typed over, in its row of the list.
+  const [renamingPage, setRenamingPage] = useState(false);
+  // Whether the open component's name is being typed over, in its form.
+  const [renamingSelected, setRenamingSelected] = useState(false);
   // While a component is dragged: which one, and where it would go. The
   // preview shows it there already.
   const [dragged, setDragged] = useState<{ id: string; place: Place } | null>(null);
@@ -251,8 +259,8 @@ export function PageEditor({
     // "Banner moved." within a list, "Banner moved into Section." between two.
     const changesParent = findPlace(content, id)?.parentId !== place.parentId;
     const parent = place.parentId ? findInstance(content, place.parentId) : undefined;
-    const into = parent ? `into ${labelOf(parent, definitions)}` : "on to the page";
-    const label = labelOf(instance, definitions);
+    const into = parent ? `into ${nameOf(parent, definitions)}` : "on to the page";
+    const label = nameOf(instance, definitions);
     changeWithUndo(after, changesParent ? `${label} moved ${into}.` : `${label} moved.`);
 
     // Choosing it shows where it went, in the list and in the preview.
@@ -260,11 +268,69 @@ export function PageEditor({
     unfoldAround(id, after);
   }
 
-  /** Moves the component whose form is open one place among its neighbours. */
-  function moveSelected(direction: "up" | "down") {
-    if (!selected) return;
-    const after = moveInstance(content, selected.id, direction);
-    changeWithUndo(after, `${labelOf(selected, definitions)} moved ${direction}.`);
+  /** Moves a component one place up or down among its neighbours. */
+  function stepComponent(id: string, direction: "up" | "down") {
+    const instance = findInstance(content, id);
+    const after = moveInstance(content, id, direction);
+    // Already first or last.
+    if (!instance || after === content) return;
+    changeWithUndo(after, `${nameOf(instance, definitions)} moved ${direction}.`);
+  }
+
+  /** Gives a component a name of its own, or takes it away with "". */
+  function renameComponent(id: string, name: string) {
+    change({ content: renameInstance(content, id, name) });
+  }
+
+  /** Puts a copy of a component, and of everything in it, straight after it. */
+  function duplicateComponent(id: string) {
+    const instance = findInstance(content, id);
+    const place = findPlace(content, id);
+    if (!instance || !place) return;
+
+    const copy = copyInstance(instance, () => crypto.randomUUID());
+    // Two rows called "Hero" could not be told apart.
+    if (copy.name) copy.name = `${copy.name} copy`;
+
+    const after = insertInstance(content, place.parentId, copy, place.beforeId);
+    changeWithUndo(after, `${nameOf(instance, definitions)} duplicated.`);
+    // Choosing the copy shows which of the two it is, in the list and the preview.
+    setOpen({ ...open, id: copy.id });
+  }
+
+  /** The open component's name as typed in its form, or null if given up. */
+  function renameSelected(typed: string | null) {
+    setRenamingSelected(false);
+    if (!selected || !selectedDefinition || typed === null) return;
+    // Typing the kind of component, or nothing, takes the name away.
+    const name = typed.trim() === selectedDefinition.label ? "" : typed.trim();
+    if (name !== (selected.name ?? "")) renameComponent(selected.id, name);
+  }
+
+  /**
+   * Clicking a row puts keyboard focus on the heading of the form it opens.
+   * So the keys that work on a row work on that heading too.
+   */
+  function handleHeadingKey(event: KeyboardEvent<HTMLHeadingElement>) {
+    // A key pressed in the name's input, inside the heading, is typing.
+    if (!selected || event.target !== event.currentTarget) return;
+    const asked = keyRequest(event);
+
+    if (asked === "rename") setRenamingSelected(true);
+    else if (asked === "duplicate") duplicateComponent(selected.id);
+    else if (asked === "remove") removeComponent(selected.id);
+    else if (asked === "up" || asked === "down") stepComponent(selected.id, asked);
+    else return;
+
+    event.preventDefault();
+  }
+
+  /** The title as typed in the page's row, or null if that was given up. */
+  function renamePage(typed: string | null) {
+    setRenamingPage(false);
+    // A page must have a title, so an empty one leaves it as it was.
+    if (typed === null || typed.trim() === "" || typed.trim() === title) return;
+    change({ title: typed.trim() });
   }
 
   function removeComponent(id: string) {
@@ -272,7 +338,7 @@ export function PageEditor({
     if (!instance) return;
 
     const after = removeInstance(content, id);
-    changeWithUndo(after, `${labelOf(instance, definitions)} removed.`);
+    changeWithUndo(after, `${nameOf(instance, definitions)} removed.`);
     // It may be the component that is chosen, or what that one is in.
     if (open.id && !findInstance(after, open.id)) showList();
   }
@@ -445,19 +511,42 @@ export function PageEditor({
         data-narrow-side={narrowSide}
       >
         <div className={styles.listPanel}>
-          <PageList siteId={site.id} pages={pages} currentId={page.id} />
+          <PageList
+            siteId={site.id}
+            pages={pages}
+            currentId={page.id}
+            onRename={renamePage}
+          />
 
           {/* The page and everything on it, as one tree: the page's own row,
               then its components one step in. */}
           <section aria-labelledby="page-heading">
             <h2 id="page-heading" className={styles.pageHeading}>
+              {renamingPage && (
+                <div className={`tree-row ${styles.pageRow}`} style={atDepth(0)} data-selected>
+                  <Icon name="page" />
+                  <RenameInput
+                    value={title}
+                    label="Page title"
+                    rowId={detailsRowId}
+                    onDone={renamePage}
+                  />
+                </div>
+              )}
               <button
                 type="button"
                 id={detailsRowId}
                 className={`tree-row ${styles.pageRow}`}
                 style={atDepth(0)}
+                // Out of sight while the title is typed over, in the same place.
+                hidden={renamingPage}
                 data-selected={selected === undefined || undefined}
                 onClick={() => openForm(null)}
+                // Like a component's row: double-click or F2 to rename.
+                onDoubleClick={() => setRenamingPage(true)}
+                onKeyDown={(event) => {
+                  if (event.key === "F2") setRenamingPage(true);
+                }}
               >
                 <Icon name="page" />
                 <span className="tree-text">
@@ -492,6 +581,9 @@ export function PageEditor({
                 onSelect={openForm}
                 onMove={moveComponent}
                 onDrag={setDragged}
+                onStep={stepComponent}
+                onRename={renameComponent}
+                onDuplicate={duplicateComponent}
                 onRemove={removeComponent}
                 onAddInside={(parentId) => setPicker({ parentId })}
               />
@@ -561,7 +653,7 @@ export function PageEditor({
                   {ancestors.map((ancestor) => (
                     <li key={ancestor.id}>
                       <button type="button" onClick={() => openForm(ancestor.id)}>
-                        {labelOf(ancestor, definitions)}
+                        {nameOf(ancestor, definitions)}
                       </button>
                     </li>
                   ))}
@@ -597,17 +689,37 @@ export function PageEditor({
               <>
                 <div className={styles.formHeading}>
                   <div className={styles.formTitle}>
-                    <h2 id="form-heading" ref={formHeading} tabIndex={-1}>
-                      {selectedDefinition.label}
+                    <h2
+                      id="form-heading"
+                      ref={formHeading}
+                      tabIndex={-1}
+                      onDoubleClick={() => setRenamingSelected(true)}
+                      onKeyDown={handleHeadingKey}
+                    >
+                      {renamingSelected ? (
+                        <RenameInput
+                          value={nameOf(selected, definitions)}
+                          label={`Name of this ${selectedDefinition.label}`}
+                          rowId="form-heading"
+                          onDone={renameSelected}
+                        />
+                      ) : (
+                        nameOf(selected, definitions)
+                      )}
                     </h2>
                     <FormActions
                       isFirst={siblings[0] === selected}
                       isLast={siblings.at(-1) === selected}
-                      onMove={moveSelected}
+                      onRename={() => setRenamingSelected(true)}
+                      onMove={(direction) => stepComponent(selected.id, direction)}
                       onRemove={() => removeComponent(selected.id)}
                     />
                   </div>
-                  <p className="muted">{selectedDefinition.description}</p>
+                  <p className="muted">
+                    {/* Under a name of its own, say what kind of component it is. */}
+                    {selected.name && `${selectedDefinition.label}. `}
+                    {selectedDefinition.description}
+                  </p>
                 </div>
 
                 <GroupFields
@@ -687,15 +799,17 @@ export function PageEditor({
   );
 }
 
-/** Move up, move down and remove, beside the name of the open component. */
+/** Rename, move up, move down and remove, beside the name of the open component. */
 function FormActions({
   isFirst,
   isLast,
+  onRename,
   onMove,
   onRemove,
 }: {
   isFirst: boolean;
   isLast: boolean;
+  onRename: () => void;
   onMove: (direction: "up" | "down") => void;
   onRemove: () => void;
 }) {
@@ -704,6 +818,15 @@ function FormActions({
   // disabled would lose keyboard focus part way through a few presses.
   return (
     <div className={styles.formActions}>
+      <button
+        type="button"
+        className="icon-button"
+        title="Rename"
+        aria-label="Rename"
+        onClick={onRename}
+      >
+        <Icon name="rename" />
+      </button>
       <button
         type="button"
         className="icon-button"

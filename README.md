@@ -78,10 +78,15 @@ they do not clash with ones you may already have running.
    form make the same moves without dragging.
 5. Choose **Add inside Section** to nest a component, or **Add component** to
    add one at the top level.
-6. Change something, then open another page from the list, or by clicking the
+6. Double-click a Section's row, or press F2, and give it a name such as
+   "Hero", so it can be told from the other Sections. The row's three dots,
+   or a right click, open a menu with the rest: duplicate, move up or down,
+   and remove, each beside the key that does the same. The page's title is
+   renamed the same way, from its own row.
+7. Change something, then open another page from the list, or by clicking the
    site's own menu in the preview. The first page is marked **Unsaved** and
    keeps its changes until you come back to it.
-7. Switch the preview to **Phone** to see the page at a phone's width.
+8. Switch the preview to **Phone** to see the page at a phone's width.
 8. Save with a required field empty to see where problems are reported.
 9. Create a page on Harbour Sevens. The same components appear in that
    site's colours, type and corner shapes. Give it a path under another
@@ -427,6 +432,12 @@ has changed since.
 move and attach problems to, and it would let a later version save single
 changes.
 
+**An instance can have a name.** `name` is optional and only the manager reads
+it: three Sections on one page become "Hero", "Pools" and "Tickets" in the
+tree. It is kept in the page JSON and not beside it, so it comes along when a
+page is exported, imported or duplicated. The renderer never looks at it, so a
+name cannot reach a visitor.
+
 **The live preview is the real page, in a frame.** The editor frames
 `/preview/<page id>`, a route in the renderer's half that draws the page in
 the site's own document, with its theme and components. On every edit the
@@ -576,10 +587,10 @@ problems are shown with an icon and words, never colour alone.
 - **Stretch goals not done:** deploying to Vercel, a data-driven component
   and draft/publish. Save page publishes straight away, and the editor says
   so.
-- **Stretch goal partly done:** tests. There are 73 unit tests on the page
+- **Stretch goal partly done:** tests. There are 79 unit tests on the page
   tree, the tree of pages, validation, page details, page files, uploaded
-  images, preview messages, stored pages and contrast. None render components or drive a
-  browser.
+  images, preview messages, the editor's keys, stored pages and contrast.
+  None render components or drive a browser.
 - Deleting a page, and editing a site or its theme in the manager.
 - Choosing from the images already uploaded, and clearing out those no page
   uses any more. An image stays in the database once it is there.

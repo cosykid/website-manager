@@ -5,7 +5,7 @@ import type { ComponentInstance } from "./types";
  *
  * Page content reaches the server from a browser and from JSON files, so it
  * cannot be trusted to be well formed. This only checks the structure
- * (ids, types, props, children). Whether the props suit each component is
+ * (ids, types, names, props, children). Whether the props suit each component is
  * the library's job: see src/library/validate.ts.
  */
 export function isInstanceTree(value: unknown): value is ComponentInstance[] {
@@ -15,9 +15,10 @@ export function isInstanceTree(value: unknown): value is ComponentInstance[] {
 function isInstance(value: unknown): value is ComponentInstance {
   if (!isPlainObject(value)) return false;
 
-  const { id, type, props, children } = value;
+  const { id, type, name, props, children } = value;
   if (typeof id !== "string" || id === "") return false;
   if (typeof type !== "string" || type === "") return false;
+  if (name !== undefined && typeof name !== "string") return false;
   if (!isPlainObject(props)) return false;
   if (children === undefined) return true;
 

@@ -84,6 +84,7 @@ Every entry in `content`, and in a section's `children`, has the same shape:
 | --- | --- |
 | `id` | Any text, but not empty. No two components on a page may share an id, however deeply they are nested. Visitors never see it. Problems are reported by id, so a readable one such as `home-squad-grid` is easier to find. The manager generates random ids. |
 | `type` | Which component this is: `"section"`, `"banner"` or `"card-grid"`. |
+| `name` | Optional. What the manager calls this component in its list, such as `"Hero"`, to tell it from others of its kind. Any text. Visitors never see it. Leave the key off for a component with no name. |
 | `props` | The component's settings, as an object. It must be present even when it is empty: `"props": {}`. |
 | `children` | Only on a `section`: the components inside it, in order. Leave this key off every other component. Even an empty `"children": []` is refused there. |
 
@@ -386,7 +387,7 @@ quotes, then the prop. Dots lead into groups and lists, and lists count from
 | `unknown site` | `siteId` is not the `id` of a site in `seed/sites.json`. |
 | `invalid path` | `path` breaks the rules under [A page](#a-page). |
 | `title is missing` | `title` is absent, empty, or not text. |
-| `content is not a valid tree of components` | The structure is wrong somewhere. `content` or a `children` is not a list, a component has no `id`, `type` or `props`, or two components share an `id`. |
+| `content is not a valid tree of components` | The structure is wrong somewhere. `content` or a `children` is not a list, a component has no `id`, `type` or `props`, a `name` is not text, or two components share an `id`. |
 | `"hero" is not a component in the library.` | `type` is not `section`, `banner` or `card-grid`. |
 | `Banner cannot contain other components.` | `children` on a component that is not a section. |
 | `Heading is required.` | A required text or address is absent or blank. A misspelt name for a required prop also ends up here. |

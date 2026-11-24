@@ -1,0 +1,62 @@
+/* The menu of things to do with one row: see Menu.tsx. Like a dialog it floats
+   above the page, so it has a shadow. */
+
+/* A popover starts in the middle of the window. This one goes where it is
+   told: Menu.tsx sets its left and top. */
+.menu {
+  position: fixed;
+  inset: auto;
+  min-width: 12.5rem;
+  margin: 0;
+  padding: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 10px 32px rgb(0 0 0 / 0.22);
+  color: var(--text);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  width: 100%;
+  min-height: var(--tree-row-height);
+  padding: 0 0.625rem;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* The pointer and the arrow keys mark a choice the same way. */
+.item:hover,
+.item:focus-visible {
+  outline: none;
+  background: var(--selected);
+}
+
+/* Not on offer for this row: faded, like a disabled button. */
+.item[aria-disabled="true"] {
+  background: transparent;
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* The keys that do the same thing. */
+.keys {
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.8125rem;
+}
+
+.line {
+  height: 1px;
+  margin: 0.25rem 0.625rem;
+  background: var(--border);
+}
