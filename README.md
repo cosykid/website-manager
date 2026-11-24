@@ -279,8 +279,8 @@ The commit "Add a third component: Banner" is a worked example. It adds three
 files, changes one line in each of two lists, and touches nothing in
 `src/manager`.
 
-1. **Describe it.** Create `src/library/banner/definition.ts` (shown here
-   without its placeholder text):
+1. **Describe it.** Create `src/library/banner/definition.ts` (shown here as it
+   was in that commit, without its placeholder text):
 
    ```ts
    import { defineComponent } from "../types";
@@ -305,6 +305,9 @@ files, changes one line in each of two lists, and touches nothing in
      },
    });
    ```
+
+   For an image, use the fields in `src/library/image-fields.ts`, as Banner
+   does now: its address and its alt text.
 
 2. **Draw it.** Create `src/library/banner/Banner.tsx` (and a CSS module if
    it needs one). Its props are the fields above. Build it from the

@@ -1,9 +1,10 @@
+import { imageFields } from "../image-fields";
 import { defineComponent } from "../types";
 
 export const bannerDefinition = defineComponent({
   type: "banner",
   label: "Banner",
-  description: "A large heading with a short message and an optional button.",
+  description: "A large heading with a short message, and an optional button and image.",
   summaryField: "heading",
   fields: {
     heading: {
@@ -36,6 +37,12 @@ export const bannerDefinition = defineComponent({
           placeholder: "/fixtures or https://…",
         },
       },
+    },
+    image: {
+      kind: "group",
+      label: "Image",
+      optional: true,
+      fields: imageFields,
     },
   },
 });

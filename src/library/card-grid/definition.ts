@@ -1,3 +1,4 @@
+import { imageFields } from "../image-fields";
 import { defineComponent } from "../types";
 
 export const cardGridDefinition = defineComponent({
@@ -30,18 +31,7 @@ export const cardGridDefinition = defineComponent({
           image: {
             kind: "group",
             label: "Image",
-            fields: {
-              url: {
-                kind: "image",
-                label: "Image address",
-                required: true,
-              },
-              alt: {
-                kind: "text",
-                label: "Alt text",
-                help: "Describes the image for people who can't see it. Leave empty if the image is only decoration.",
-              },
-            },
+            fields: imageFields,
           },
           link: {
             kind: "group",

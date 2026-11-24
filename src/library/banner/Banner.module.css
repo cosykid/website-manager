@@ -1,4 +1,15 @@
+/* The words, with the image beside them if there is one. Where there is not
+   room for two columns of 20rem, the image goes underneath. The columns go by
+   the banner's own width, so this also works in half of a two-column section.
+   A banner with no image has one column, as wide as it can be. */
 .banner {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  gap: clamp(1.5rem, 4vw, 3rem);
+  align-items: center;
+}
+
+.words {
   display: grid;
   gap: 1.25rem;
   justify-items: start;
@@ -11,4 +22,9 @@
   font-size: 1.1875rem;
   /* Keeps the line breaks an editor typed. */
   white-space: pre-line;
+}
+
+.picture {
+  overflow: hidden;
+  border-radius: var(--radius-card);
 }

@@ -144,7 +144,8 @@ component that has `children`.
 
 ### `banner`
 
-A large heading, a short message and an optional button.
+A large heading and a short message, with an optional button and an optional
+image.
 
 | Prop | Kind | Required | Notes |
 | --- | --- | --- | --- |
@@ -153,6 +154,9 @@ A large heading, a short message and an optional button.
 | `button` | Group | No | A solid button under the message. Leave it out for no button. |
 | `button.label` | Text | Yes, if there is a button | The text on the button. |
 | `button.href` | Address | Yes, if there is a button | Where the button goes. |
+| `image` | Group | No | A picture beside the words, or under them where there is not room. Leave it out for no picture. |
+| `image.url` | Address | Yes, if there is an image | The picture is cropped to fill a 4:3 frame, as a card's is. |
+| `image.alt` | Text | No | Describes the picture for people who cannot see it. Leave it out when the picture is only decoration. |
 
 ```json
 {
@@ -216,7 +220,7 @@ Each entry in `cards`:
   `public/seed/ironbarks/jersey-1.svg` is `/seed/ironbarks/jersey-1.svg`.
   A full `https://` address on another host also works.
 - To use a picture from your own computer, upload it in the manager: choose
-  **Upload image** on any card and copy the address it is given. The address
+  **Upload image** on any card or banner and copy the address it is given. The address
   works on every site.
 
 ## A complete example
@@ -466,7 +470,7 @@ hour to show. The README's "Pre-rendering" says why.)
 - **Links go to pages.** There are no `mailto:`, `tel:` or `#anchor`
   addresses.
 - **Images are addresses.** A page file has no pictures in it, only where to
-  find them. A card's image is always cropped to 4:3.
+  find them. They are always cropped to 4:3.
 - **Content is fixed.** A page cannot pull in data, such as fixtures from
   another system, or reuse a block from another page.
 - **A page has a title and a path, and nothing more.** No description for
