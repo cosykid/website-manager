@@ -168,6 +168,22 @@
   gap: 0.25rem;
 }
 
+/* The component's name, with what can be done to it at the other end. */
+.formTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+/* The last icon lines up with the edge of the fields, not its button. */
+.formActions {
+  display: flex;
+  flex: none;
+  margin-block: -0.25rem;
+  margin-right: calc((1rem - var(--icon-button-size)) / 2);
+}
+
 /* The form's heading takes focus when a form opens. It is not a control, so
    it shows no focus ring. */
 .form h2:focus {
@@ -316,8 +332,8 @@
 }
 
 /* With room both ways, the window itself stops scrolling. The toolbar stays
-   put, the list and the form scroll on their own, and the preview fills the
-   rest. */
+   put, the lists and the form each scroll on their own, and the preview fills
+   the rest. */
 @media (min-width: 50rem) and (min-height: 40rem) {
   .editor {
     display: grid;
@@ -330,9 +346,27 @@
     min-height: 0;
   }
 
-  .listPanel,
   .formPanel {
     overflow-y: auto;
+    scrollbar-width: thin;
+  }
+
+  /* The list of pages stays put while the page's own tree scrolls under it,
+     so the other pages are in reach however long this one is. */
+  .listPanel {
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 0;
+  }
+
+  .listPanel > section {
+    flex: 1;
+    min-height: 0;
+    margin-right: -0.5rem;
+    padding-right: 0.5rem;
+    padding-bottom: 5.5rem;
+    overflow-y: auto;
+    scrollbar-width: thin;
   }
 
   .previewSide {

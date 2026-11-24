@@ -3,6 +3,7 @@
 
 .pages {
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   grid-template-columns: minmax(0, 1fr);
   gap: 0.125rem;
 }
@@ -14,11 +15,27 @@
   padding-left: var(--tree-edge);
 }
 
-/* Room for about eight pages. A site with more scrolls here, so that the
-   page's components below are never pushed out of reach. */
+/* A site with many pages scrolls here, so that the page's components below are
+   never pushed out of reach. The half row says that there are more. A
+   scrollbar, where there is one, goes in the space beside the rows. */
 .list {
-  max-height: 18rem;
+  max-height: calc(5.5 * var(--tree-row-height));
+  margin-right: -0.5rem;
+  padding-right: 0.5rem;
   overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+/* Where the editor fills the window exactly (see PageEditor.module.css), the
+   pages can have up to this much of its height. */
+@media (min-width: 50rem) and (min-height: 40rem) {
+  .pages {
+    max-height: 40%;
+  }
+
+  .list {
+    max-height: none;
+  }
 }
 
 .level {
@@ -32,6 +49,8 @@
   padding-right: 0.625rem;
   color: inherit;
   text-decoration: none;
+  /* Scrolled into view, it brings half of the next row with it. */
+  scroll-margin-block: calc(var(--tree-row-height) / 2);
 }
 
 .page svg {

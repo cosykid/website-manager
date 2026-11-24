@@ -4,10 +4,14 @@ import { notFound } from "next/navigation";
 import { listPages } from "@/db/pages";
 import { getSite } from "@/db/sites";
 import { CreatePageForm } from "@/manager/CreatePageForm";
+import { UnsavedMark } from "@/manager/Drafts";
 import { Icon } from "@/manager/Icon";
 import { ImportPageForm } from "@/manager/ImportPageForm";
 import { getSiteOrigin } from "@/manager/site-origin";
 import { SiteMark } from "@/manager/SiteMark";
+import { atDepth } from "@/manager/tree-depth";
+import { pageTree, type PageNode } from "@/page-model/page-tree";
+import type { Page } from "@/page-model/types";
 
 type Props = PageProps<"/sites/[siteId]">;
 
@@ -65,49 +69,75 @@ export default async function SitePagesPage({ params }: Props) {
             This site has no pages yet. Create or import the first one below.
           </p>
         ) : (
-          <ul className="rows">
-            {pages.map((page) => (
-              <li key={page.id} className="row">
-                <div className="row-main">
-                  <h3 className="row-title">
-                    {/* The whole row is this link: see .row-link in manager.css. */}
-                    <Link
-                      className="row-link"
-                      href={`/sites/${site.id}/pages/${page.id}`}
-                    >
-                      {page.title}
-                      <span className="visually-hidden">: edit page</span>
-                    </Link>
-                  </h3>
-                  <p className="muted">{page.path}</p>
-                </div>
-
-                <p className="row-meta">
-                  Saved {updatedFormat.format(page.updatedAt)}
-                </p>
-
-                <a
-                  className="row-action"
-                  href={`${origin}${page.path}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  View page
-                  <span className="visually-hidden"> {page.title} in a new tab</span>
-                  <Icon name="open" size={14} />
-                </a>
-
-                <span className="row-chevron">
-                  <Icon name="next" />
-                </span>
-              </li>
-            ))}
-          </ul>
+          <PageRows nodes={pageTree(pages)} depth={0} siteId={site.id} origin={origin} />
         )}
       </section>
 
       <CreatePageForm siteId={site.id} />
       <ImportPageForm siteId={site.id} />
     </main>
+  );
+}
+
+type PageRowsProps = {
+  nodes: PageNode<Page>[];
+  /** How many steps in from the edge to draw these. */
+  depth: number;
+  siteId: string;
+  /** The public address of the site. */
+  origin: string;
+};
+
+/** Pages as rows, each with the pages under it one step further in. */
+function PageRows(props: PageRowsProps) {
+  const { nodes, depth, siteId, origin } = props;
+
+  return (
+    <ul className={depth === 0 ? "rows" : "rows-inside"}>
+      {nodes.map(({ page, children }) => (
+        <li key={page.id}>
+          <div className="row" style={atDepth(depth)}>
+            <span className="row-icon">
+              <Icon name="page" />
+            </span>
+
+            <div className="row-main">
+              <h3 className="row-title">
+                {/* The whole row is this link: see .row-link in manager.css. */}
+                <Link className="row-link" href={`/sites/${siteId}/pages/${page.id}`}>
+                  {page.title}
+                  <span className="visually-hidden">: edit page</span>
+                </Link>{" "}
+                <UnsavedMark pageId={page.id} />
+              </h3>
+              <p className="muted">{page.path}</p>
+            </div>
+
+            <p className="row-meta">Saved {updatedFormat.format(page.updatedAt)}</p>
+
+            <a
+              className="row-action"
+              href={`${origin}${page.path}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              View page
+              <span className="visually-hidden"> {page.title} in a new tab</span>
+              <Icon name="open" size={14} />
+            </a>
+
+            <span className="row-chevron">
+              <Icon name="next" />
+            </span>
+          </div>
+
+          {children.length > 0 && (
+            <div className="tree-children" style={atDepth(depth)}>
+              <PageRows {...props} nodes={children} depth={depth + 1} />
+            </div>
+          )}
+        </li>
+      ))}
+    </ul>
   );
 }

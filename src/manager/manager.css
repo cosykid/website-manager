@@ -255,12 +255,12 @@ a:hover {
 }
 
 /* A see-through grey, so it shows on a plain, hovered or selected row. */
-.icon-button:hover:not(:disabled) {
+.icon-button:hover:not(:disabled, [aria-disabled="true"]) {
   background: rgb(127 127 127 / 0.22);
   color: var(--text);
 }
 
-.icon-button:disabled {
+.icon-button:is(:disabled, [aria-disabled="true"]) {
   opacity: 0.35;
   cursor: not-allowed;
 }
@@ -312,6 +312,7 @@ a:hover {
   --tree-edge: 0.625rem; /* from the edge of a row to its text */
   --tree-indent: 1.125rem; /* one step in */
   --tree-slot: 1.125rem; /* the room for an icon in front of a name */
+  --tree-row-height: max(2rem, var(--control-height));
 }
 
 .tree-row {
@@ -319,7 +320,7 @@ a:hover {
   position: relative;
   display: flex;
   align-items: center;
-  min-height: max(2rem, var(--control-height));
+  min-height: var(--tree-row-height);
   padding-left: calc(var(--tree-edge) + var(--depth) * var(--tree-indent));
   border-radius: var(--radius);
   background: var(--row-fill);
@@ -352,6 +353,15 @@ a:hover {
   width: 1px;
   background: var(--border);
   pointer-events: none;
+}
+
+/* A name and the notes beside it, all on one baseline. */
+.tree-text {
+  display: flex;
+  flex: 1;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-width: 0;
 }
 
 .tree-label {
@@ -554,9 +564,18 @@ textarea.input {
 /* Rows hang 0.75rem outside the column, so their text lines up with the
    heading above while the hover colour has room around it. */
 .rows {
+  --tree-edge: 0.75rem;
+  --tree-indent: 1.75rem;
   margin: 0.5rem -0.75rem 0;
   padding: 0;
   border-top: 1px solid var(--border);
+  list-style: none;
+}
+
+/* Pages under another page, one step in: see "Trees". */
+.rows-inside {
+  margin: 0;
+  padding: 0;
   list-style: none;
 }
 
@@ -566,11 +585,23 @@ textarea.input {
   align-items: center;
   gap: 1.25rem;
   padding: 0.875rem 0.75rem;
+  padding-left: calc(var(--tree-edge) + var(--depth, 0) * var(--tree-indent));
   border-bottom: 1px solid var(--border);
 }
 
 .row:hover {
   background: var(--hover);
+}
+
+/* What kind of thing the row is. It sits close to the name, level with it. */
+.row-icon {
+  display: inline-flex;
+  flex: none;
+  align-self: start;
+  justify-content: center;
+  width: var(--tree-slot);
+  margin: 0.25rem -0.625rem 0 0;
+  color: var(--text-muted);
 }
 
 .row-main {

@@ -32,7 +32,8 @@ export function PageList({ siteId, pages, currentId }: PageListProps) {
         </h2>
         <Link
           className="icon-button"
-          href={`/sites/${siteId}#new-page`}
+          // Lands in the first input of the form that creates a page.
+          href={`/sites/${siteId}#new-page-title`}
           aria-label="New page"
           title="New page"
         >
@@ -91,10 +92,12 @@ function Level(props: LevelProps) {
               aria-current={isCurrent ? "page" : undefined}
             >
               <Icon name="page" />
-              <span className="tree-label">{title || "Untitled page"}</span>{" "}
-              {/* Under /squad, "/squad/juniors" needs only "/juniors". */}
-              <span className="tree-note">{page.path.slice(parentPath.length)}</span>{" "}
-              <UnsavedMark pageId={page.id} />
+              <span className="tree-text">
+                <span className="tree-label">{title || "Untitled page"}</span>{" "}
+                {/* Under /squad, "/squad/juniors" needs only "/juniors". */}
+                <span className="tree-note">{page.path.slice(parentPath.length)}</span>{" "}
+                <UnsavedMark pageId={page.id} />
+              </span>
             </Link>
 
             {children.length > 0 && (

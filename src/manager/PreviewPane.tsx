@@ -12,6 +12,10 @@ const devices = {
 };
 type Device = keyof typeof devices;
 
+// The size the editor last picked. It is kept out here because opening another
+// page draws the editor afresh, and should not go back to the first size.
+let lastPicked: Device | null = null;
+
 type PreviewPaneProps = {
   pageId: string;
   pageTitle: string;
@@ -42,7 +46,11 @@ export function PreviewPane({
   onVisit,
 }: PreviewPaneProps) {
   // The size the editor picked, or null while they have not picked one.
-  const [picked, setPicked] = useState<Device | null>(null);
+  const [picked, setPicked] = useState(lastPicked);
+  useEffect(() => {
+    lastPicked = picked;
+  }, [picked]);
+
   const frame = useRef<HTMLIFrameElement>(null);
 
   // How many times the preview has said it is ready. It says so again if the

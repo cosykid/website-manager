@@ -20,12 +20,11 @@ import { useDragToMove } from "./useDragToMove";
  *
  * Choosing a row opens that component's form. Dragging a row moves it: every
  * place it can go is a `Gap`, and the gap nearest the pointer shows a line.
- * The same moves can be made without dragging, with the buttons on a row and
- * with "Placed in" on a component's form.
+ * The same moves can be made without dragging, from the component's form.
  *
  * Each row has a position number (1, 2, 2.1) that only screen readers read
- * out. It gives every row and button its own name, such as "Move Section 2
- * up", where the eye has the indent to go by.
+ * out. It gives every row and button its own name, such as "Remove Section 2",
+ * where the eye has the indent to go by.
  */
 
 type OutlineProps = {
@@ -38,9 +37,7 @@ type OutlineProps = {
   folded: string[];
   onFold: (id: string, shut: boolean) => void;
   onSelect: (id: string) => void;
-  /** Moves a component one place among its neighbours. */
-  onMove: (id: string, direction: "up" | "down") => void;
-  /** Moves a component to any other place on the page. */
+  /** Moves a component to another place on the page. */
   onMoveTo: (id: string, place: Place) => void;
   onRemove: (id: string) => void;
   /** Opens the component picker, to add inside the instance with this id. */
@@ -134,8 +131,6 @@ function Level(props: LevelProps) {
                 node={node}
                 // 1, 2, 3 on the page itself; 2.1, 2.2 inside component 2.
                 number={parentNumber ? `${parentNumber}.${index + 1}` : `${index + 1}`}
-                isFirst={index === 0}
-                isLast={index === nodes.length - 1}
               />
             </li>
           ))}
@@ -171,12 +166,7 @@ function Gap({
   );
 }
 
-type RowProps = LevelProps & {
-  node: ComponentInstance;
-  number: string;
-  isFirst: boolean;
-  isLast: boolean;
-};
+type RowProps = LevelProps & { node: ComponentInstance; number: string };
 
 function Row(props: RowProps) {
   const { node, number, definitions, depth, target } = props;
@@ -236,46 +226,30 @@ function Row(props: RowProps) {
         >
           {/* The spaces keep the parts apart when a screen reader reads the
               button out: "1.1 Card grid Meet the squad". */}
-          <span className="visually-hidden">{number}</span>{" "}
-          <span className="tree-label" data-strong={holdsOthers || undefined}>
-            {label}
-          </span>{" "}
-          {summary && <span className="tree-note">{summary}</span>}{" "}
-          {isFolded && children.length > 0 && (
-            <span className={styles.count}>
-              {children.length}
-              <span className="visually-hidden"> inside</span>
-            </span>
-          )}{" "}
-          {problems > 0 && (
-            <span className="problem-count">
-              <Icon name="problem" size={14} />
-              {problems} {problems === 1 ? "problem" : "problems"}
-            </span>
-          )}
+          <span className="tree-text">
+            <span className="visually-hidden">{number}</span>{" "}
+            <span className="tree-label" data-strong={holdsOthers || undefined}>
+              {label}
+            </span>{" "}
+            {summary && <span className="tree-note">{summary}</span>}{" "}
+            {isFolded && children.length > 0 && (
+              <span className={styles.count}>
+                {children.length}
+                <span className="visually-hidden"> inside</span>
+              </span>
+            )}{" "}
+            {problems > 0 && (
+              <span className="problem-count">
+                <Icon name="problem" size={14} />
+                {problems} {problems === 1 ? "problem" : "problems"}
+              </span>
+            )}
+          </span>
         </button>
 
         {/* Drawn only for a row under the pointer or holding keyboard focus,
-            and always on a touch screen: see .actions in the stylesheet. */}
-        <div className={styles.actions}>
-          <button
-            type="button"
-            className="icon-button"
-            aria-label={`Move ${name} up`}
-            disabled={props.isFirst}
-            onClick={() => props.onMove(node.id, "up")}
-          >
-            <Icon name="up" />
-          </button>
-          <button
-            type="button"
-            className="icon-button"
-            aria-label={`Move ${name} down`}
-            disabled={props.isLast}
-            onClick={() => props.onMove(node.id, "down")}
-          >
-            <Icon name="down" />
-          </button>
+            and always on a touch screen: see .remove in the stylesheet. */}
+        <div className={styles.remove}>
           <button
             type="button"
             className="icon-button"
@@ -313,7 +287,7 @@ function Row(props: RowProps) {
             onClick={() => props.onAddInside(node.id)}
           >
             <Icon name="add" size={14} />
-            Add inside {label}
+            <span className="tree-label">Add inside {label}</span>
             <span className="visually-hidden"> {number}</span>
           </button>
         </div>

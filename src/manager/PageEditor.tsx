@@ -139,6 +139,9 @@ export function PageEditor({
 
   const selected = open.kind === "component" ? findInstance(content, open.id) : undefined;
   const selectedDefinition = selected ? definitions[selected.type] : undefined;
+  // What it is inside, and the components it is in a row with.
+  const ancestors = selected ? findAncestors(content, selected.id) : [];
+  const siblings = ancestors.at(-1)?.children ?? content;
   const issues = showProblems ? validateTree(content, definitions) : {};
   const detailErrors = showProblems ? checkPageDetails(title, path) : {};
   const pathError = detailErrors.path ?? (pathTaken === path ? PATH_TAKEN_MESSAGE : "");
@@ -242,6 +245,13 @@ export function PageEditor({
     const into = parent ? `into ${labelOf(parent, definitions)}` : "on to the page";
     const label = labelOf(instance, definitions);
     changeWithUndo(after, changesParent ? `${label} moved ${into}.` : `${label} moved.`);
+  }
+
+  /** Moves the component whose form is open one place among its neighbours. */
+  function moveSelected(direction: "up" | "down") {
+    if (!selected) return;
+    const after = moveInstance(content, selected.id, direction);
+    changeWithUndo(after, `${labelOf(selected, definitions)} moved ${direction}.`);
   }
 
   function removeComponent(id: string) {
@@ -441,16 +451,18 @@ export function PageEditor({
                 onClick={() => openForm({ kind: "details" })}
               >
                 <Icon name="page" />
-                <span className="tree-label" data-strong>
-                  {pageTitle}
-                </span>{" "}
-                <span className="tree-note">Page details</span>{" "}
-                {detailProblems > 0 && (
-                  <span className="problem-count">
-                    <Icon name="problem" size={14} />
-                    {detailProblems} {detailProblems === 1 ? "problem" : "problems"}
-                  </span>
-                )}
+                <span className="tree-text">
+                  <span className="tree-label" data-strong>
+                    {pageTitle}
+                  </span>{" "}
+                  <span className="tree-note">Page details</span>{" "}
+                  {detailProblems > 0 && (
+                    <span className="problem-count">
+                      <Icon name="problem" size={14} />
+                      {detailProblems} {detailProblems === 1 ? "problem" : "problems"}
+                    </span>
+                  )}
+                </span>
               </button>
             </h2>
 
@@ -469,9 +481,6 @@ export function PageEditor({
                 folded={folded}
                 onFold={foldRow}
                 onSelect={(id) => openForm({ kind: "component", id })}
-                onMove={(id, direction) =>
-                  change({ content: moveInstance(content, id, direction) })
-                }
                 onMoveTo={moveComponentTo}
                 onRemove={removeComponent}
                 onAddInside={(parentId) => setPicker({ parentId })}
@@ -577,7 +586,7 @@ export function PageEditor({
                       {pageTitle}
                     </button>
                   </li>
-                  {findAncestors(content, selected.id).map((ancestor) => (
+                  {ancestors.map((ancestor) => (
                     <li key={ancestor.id}>
                       <button
                         type="button"
@@ -618,9 +627,17 @@ export function PageEditor({
             {selected && selectedDefinition && (
               <>
                 <div className={styles.formHeading}>
-                  <h2 id="form-heading" ref={formHeading} tabIndex={-1}>
-                    {selectedDefinition.label}
-                  </h2>
+                  <div className={styles.formTitle}>
+                    <h2 id="form-heading" ref={formHeading} tabIndex={-1}>
+                      {selectedDefinition.label}
+                    </h2>
+                    <FormActions
+                      isFirst={siblings[0] === selected}
+                      isLast={siblings.at(-1) === selected}
+                      onMove={moveSelected}
+                      onRemove={() => removeComponent(selected.id)}
+                    />
+                  </div>
                   <p className="muted">{selectedDefinition.description}</p>
                 </div>
 
@@ -696,6 +713,56 @@ export function PageEditor({
         onClose={() => setJsonOpen(false)}
       />
     </main>
+  );
+}
+
+/** Move up, move down and remove, beside the name of the open component. */
+function FormActions({
+  isFirst,
+  isLast,
+  onMove,
+  onRemove,
+}: {
+  isFirst: boolean;
+  isLast: boolean;
+  onMove: (direction: "up" | "down") => void;
+  onRemove: () => void;
+}) {
+  // At the first and last place an arrow has nowhere left to go. It is marked
+  // as disabled but stays a working button, because one that is really
+  // disabled would lose keyboard focus part way through a few presses.
+  return (
+    <div className={styles.formActions}>
+      <button
+        type="button"
+        className="icon-button"
+        title="Move up"
+        aria-label="Move up"
+        aria-disabled={isFirst}
+        onClick={() => !isFirst && onMove("up")}
+      >
+        <Icon name="up" />
+      </button>
+      <button
+        type="button"
+        className="icon-button"
+        title="Move down"
+        aria-label="Move down"
+        aria-disabled={isLast}
+        onClick={() => !isLast && onMove("down")}
+      >
+        <Icon name="down" />
+      </button>
+      <button
+        type="button"
+        className="icon-button"
+        title="Remove"
+        aria-label="Remove"
+        onClick={onRemove}
+      >
+        <Icon name="remove" />
+      </button>
+    </div>
   );
 }
 

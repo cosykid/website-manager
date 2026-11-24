@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DraftsProvider } from "@/manager/Drafts";
+import { FocusOnArrival } from "@/manager/FocusOnArrival";
 import "@/manager/manager.css";
 
 export const metadata: Metadata = {
@@ -26,6 +27,7 @@ export default function ManagerLayout({ children }: LayoutProps<"/">) {
           </Link>
         </header>
         <DraftsProvider>{children}</DraftsProvider>
+        <FocusOnArrival />
       </body>
     </html>
   );
