@@ -12,8 +12,10 @@ import {
 } from "@/library/types";
 import { emptyValue, fillGroup, type Issue } from "@/library/validate";
 import { isPlainObject } from "@/page-model/shape";
+import { Gap, Held } from "./Dragging";
 import styles from "./FieldEditor.module.css";
 import { Icon } from "./Icon";
+import { useDragToMove } from "./useDragToMove";
 
 /**
  * The generated form.
@@ -275,6 +277,14 @@ function ListEditor({
   // short enough to scan and reorder.
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
+  // Entries and gaps both go by number. Gap 0 is in front of entry 0, and the
+  // last gap is after the last entry.
+  const { list, drag, startDrag } = useDragToMove((id, gap) =>
+    moveEntry(Number(id), Number(gap)),
+  );
+  // Where a drag would drop. The gap just after an entry is where it is now.
+  const target = drag && drag.gap !== String(Number(drag.id) + 1) ? drag.gap : null;
+
   function addEntry() {
     const entry =
       field.item.kind === "group"
@@ -292,18 +302,28 @@ function ListEditor({
     setOpenIndex(null);
   }
 
-  function moveEntry(index: number, by: -1 | 1) {
-    const target = index + by;
-    const reordered = [...items];
-    [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
-    onChange(reordered);
+  /** Moves an entry into a gap between two others. */
+  function moveEntry(index: number, gap: number) {
+    // The gaps on either side of an entry are both where it is now.
+    if (gap === index || gap === index + 1) return;
+
+    // The entries' numbers in their new order. Taking one out brings every gap
+    // after it one place forward.
+    const order = [...items.keys()].filter((number) => number !== index);
+    order.splice(gap > index ? gap - 1 : gap, 0, index);
+
+    onChange(order.map((number) => items[number]));
     // Keep the open entry open as it moves.
-    if (openIndex === index) setOpenIndex(target);
-    else if (openIndex === target) setOpenIndex(index);
+    if (openIndex !== null) setOpenIndex(order.indexOf(openIndex));
   }
 
   return (
-    <div className={styles.list}>
+    <div
+      ref={list}
+      className={styles.list}
+      data-drag-list
+      data-dragging={drag ? true : undefined}
+    >
       <p className="label" id={`${shared.idPrefix}-${path}-label`}>
         {field.label}
       </p>
@@ -328,13 +348,31 @@ function ListEditor({
             const panelId = `${shared.idPrefix}-${entryPath}-panel`;
 
             return (
-              <li key={index} className={styles.entry} data-open={isOpen || undefined}>
+              <li
+                key={index}
+                className={styles.entry}
+                data-open={isOpen || undefined}
+                data-dragged={drag?.id === String(index) || undefined}
+              >
+                <Gap name={String(index)} target={target} />
+
                 <div className={styles.entryRow}>
+                  {/* Drawn under the pointer, and always on a touch screen. */}
+                  <span
+                    className={styles.entryHandle}
+                    data-drag-handle
+                    onPointerDown={(press) => startDrag(press, String(index))}
+                    aria-hidden="true"
+                  >
+                    <Icon name="grip" size={14} />
+                  </span>
+
                   <button
                     type="button"
                     className={styles.entryToggle}
                     aria-expanded={isOpen}
                     aria-controls={isOpen ? panelId : undefined}
+                    onPointerDown={(press) => startDrag(press, String(index))}
                     onClick={() => setOpenIndex(isOpen ? null : index)}
                   >
                     <span className={styles.chevron} data-open={isOpen || undefined}>
@@ -363,7 +401,7 @@ function ListEditor({
                       className="icon-button"
                       aria-label={`Move ${name} up`}
                       disabled={index === 0}
-                      onClick={() => moveEntry(index, -1)}
+                      onClick={() => moveEntry(index, index - 1)}
                     >
                       <Icon name="up" />
                     </button>
@@ -372,7 +410,8 @@ function ListEditor({
                       className="icon-button"
                       aria-label={`Move ${name} down`}
                       disabled={index === items.length - 1}
-                      onClick={() => moveEntry(index, 1)}
+                      // Past the gap after it, and the one after that.
+                      onClick={() => moveEntry(index, index + 2)}
                     >
                       <Icon name="down" />
                     </button>
@@ -412,10 +451,21 @@ function ListEditor({
                     )}
                   </div>
                 )}
+
+                {/* There is one more gap after the last entry. */}
+                {index === items.length - 1 && (
+                  <Gap name={String(items.length)} target={target} />
+                )}
               </li>
             );
           })}
         </ol>
+      )}
+
+      {drag && (
+        <Held drag={drag}>
+          {entryTitle(field, items[Number(drag.id)]) || `Untitled ${field.itemLabel}`}
+        </Held>
       )}
 
       <div>

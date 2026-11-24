@@ -55,6 +55,9 @@
   position: relative;
   display: flex;
   align-items: center;
+  /* Dragging over a row must not select its text. */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .entryRow:hover {
@@ -75,6 +78,29 @@
   font: inherit;
   text-align: left;
   cursor: pointer;
+}
+
+/* Six dots in the space in front of the arrow: the row can be dragged. */
+.entryHandle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.875rem;
+  color: var(--text-muted);
+  opacity: 0;
+}
+
+.entryHandle svg {
+  flex: none;
+  stroke-width: 3;
+}
+
+.entryRow:hover .entryHandle {
+  opacity: 1;
 }
 
 /* The focus ring goes round the whole row, buttons included. */
@@ -149,9 +175,26 @@
   }
 }
 
-/* A touch screen has no pointer to hover with. There the buttons always
-   show, and take their own space at the end of the row. */
+/* While a row is being dragged, the others show no buttons on the way. */
+.list[data-dragging] .entryActions {
+  visibility: hidden;
+}
+
+/* A touch screen has no pointer to hover with. There the handle and the
+   buttons always show, and take their own space at each end of the row. */
 @media (hover: none) {
+  .entryHandle {
+    position: static;
+    flex: none;
+    align-self: stretch;
+    width: 2rem;
+    opacity: 1;
+  }
+
+  .entryToggle {
+    padding-left: 0.25rem;
+  }
+
   .entryActions {
     position: static;
     flex: none;

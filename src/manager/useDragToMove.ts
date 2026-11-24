@@ -16,7 +16,7 @@ const SCROLL_EDGE = 40;
 /** How far it scrolls, in pixels, each time the screen is drawn. */
 const SCROLL_STEP = 8;
 
-type Drag = {
+export type Drag = {
   /** The item being dragged. */
   id: string;
   /** The gap it would drop into, or null if it would stay where it is. */
@@ -29,15 +29,16 @@ type Drag = {
 /**
  * Dragging an item of a list to a new place, with a mouse, a finger or a pen.
  *
- * The list marks every place an item can go with an element that has no
- * height and a `data-gap` attribute naming the place. While an item is
- * dragged, the gap nearest the pointer is where it will drop. This hook knows
- * nothing else about the list: what a gap's name means, and what a drop does,
- * are up to the list.
+ * The list marks every place an item can go with a `Gap` (Dragging.tsx): an
+ * element that has no height and a name. While an item is dragged, the gap
+ * nearest the pointer is where it will drop. This hook knows nothing else
+ * about the list: what a gap's name means, and what a drop does, are up to it.
  *
- * Each item must be an <li>. A mouse or pen can drag an item by anything that
- * calls `startDrag` when it is pressed. A finger needs an element marked
- * `data-drag-handle`, so that swiping over the list still scrolls it.
+ * The list's outer element needs the `list` ref and a `data-drag-list`
+ * attribute, and each item must be an <li>. A mouse or pen can drag an item by
+ * anything that calls `startDrag` when it is pressed. A finger needs an
+ * element marked `data-drag-handle`, so that swiping over the list still
+ * scrolls it.
  */
 export function useDragToMove(onDrop: (id: string, gap: string) => void) {
   const list = useRef<HTMLDivElement>(null);
@@ -135,6 +136,9 @@ function nearestGap(
   let shortest = Infinity;
 
   for (const gap of list.querySelectorAll<HTMLElement>("[data-gap]")) {
+    // A list inside this one has gaps of its own.
+    if (gap.closest("[data-drag-list]") !== list) continue;
+
     const distance = Math.abs(gap.getBoundingClientRect().top - y);
     if (distance < shortest) {
       nearest = gap;

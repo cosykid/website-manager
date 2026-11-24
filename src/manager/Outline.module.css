@@ -67,9 +67,6 @@ button.fold:focus-visible {
   align-self: stretch;
   width: var(--handle-width);
   color: var(--text-muted);
-  cursor: grab;
-  /* A finger on the handle drags the row and does not scroll the list. */
-  touch-action: none;
 }
 
 .handle svg:last-child {
@@ -202,48 +199,17 @@ button.fold:focus-visible {
 
 /* ---------- Dragging ---------- */
 
-/* Where a component can be dropped. It takes up no room. */
-.gap {
-  position: relative;
-  height: 0;
-}
-
-/* The line starts as far in as the component will be. */
-.gap[data-target]::before {
-  content: "";
-  position: absolute;
-  z-index: 2;
-  top: -1px;
-  right: 0;
-  left: calc(var(--tree-edge) + var(--depth) * var(--tree-indent));
-  height: 2px;
-  border-radius: 1px;
-  background: var(--text);
-}
-
-/* A dot on its end, so a short line still catches the eye. */
-.gap[data-target]::after {
-  content: "";
-  position: absolute;
-  z-index: 2;
-  top: -4px;
-  left: calc(var(--tree-edge) + var(--depth) * var(--tree-indent) - 4px);
-  width: 8px;
-  height: 8px;
-  border: 2px solid var(--text);
-  border-radius: 50%;
-  background: var(--surface);
-}
+/* The line and the label are in manager.css, under "Dragging". */
 
 /* The gap inside a folded row is half way down it, and the row itself shows
    that it is the target. */
-.row > .gap {
+.row > [data-gap] {
   position: absolute;
   top: 50%;
 }
 
-.row > .gap::before,
-.row > .gap::after {
+.row > [data-gap]::before,
+.row > [data-gap]::after {
   display: none;
 }
 
@@ -259,46 +225,8 @@ button.fold:focus-visible {
   pointer-events: none;
 }
 
-/* What is being dragged stays where it is, faded, until it is let go. */
-.outline [data-dragged] {
-  opacity: 0.4;
-}
-
-.outline[data-dragging] .select,
-.outline[data-dragging] .handle {
-  cursor: grabbing;
-}
-
 .outline[data-dragging] .remove {
   display: none;
-}
-
-/* Follows the pointer. The page's colours swapped over, like the notice that
-   offers "Undo". */
-.held {
-  position: fixed;
-  z-index: 3;
-  top: 0.625rem;
-  left: 0.875rem;
-  display: flex;
-  gap: 0.5rem;
-  max-width: 18rem;
-  padding: 0.375rem 0.75rem;
-  border-radius: var(--radius);
-  background: var(--text);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 0.25);
-  color: var(--surface);
-  font-weight: 550;
-  white-space: nowrap;
-  pointer-events: none;
-}
-
-.heldSummary {
-  min-width: 0;
-  overflow: hidden;
-  font-weight: 400;
-  text-overflow: ellipsis;
-  opacity: 0.8;
 }
 
 @media (prefers-reduced-motion: no-preference) {

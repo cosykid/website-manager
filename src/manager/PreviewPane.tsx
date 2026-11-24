@@ -91,9 +91,10 @@ export function PreviewPane({
     return () => window.removeEventListener("message", receive);
   }, [onSelect, onVisit]);
 
-  // Send the page to the preview once it is ready, and on every change after.
+  // Send the page to the preview at the start, when it says it is ready, and
+  // on every change after. The one at the start is for a preview that was
+  // ready first, before anything here could hear it say so.
   useEffect(() => {
-    if (timesReady === 0) return;
     const message: DraftMessage = { type: "draft", content, selectedId };
     frame.current?.contentWindow?.postMessage(message, window.location.origin);
   }, [timesReady, content, selectedId]);

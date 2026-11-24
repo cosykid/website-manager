@@ -5,6 +5,7 @@ import type { ComponentDefinition } from "@/library/types";
 import type { IssuesByInstance } from "@/library/validate";
 import { findInstance, moveInstanceTo, type Place } from "@/page-model/tree";
 import type { ComponentInstance } from "@/page-model/types";
+import { Gap, Held } from "./Dragging";
 import { Icon } from "./Icon";
 import { labelOf, summaryOf } from "./instance-names";
 import styles from "./Outline.module.css";
@@ -65,7 +66,12 @@ export function Outline(props: OutlineProps) {
     drag?.gap && moveInstanceTo(content, drag.id, toPlace(drag.gap)) !== content;
 
   return (
-    <div ref={list} className={styles.outline} data-dragging={drag ? true : undefined}>
+    <div
+      ref={list}
+      className={styles.outline}
+      data-drag-list
+      data-dragging={drag ? true : undefined}
+    >
       <Level
         {...props}
         nodes={content}
@@ -77,22 +83,16 @@ export function Outline(props: OutlineProps) {
         startDrag={startDrag}
       />
 
-      {/* What is being dragged, beside the pointer. */}
       {drag && dragged && (
-        <div
-          className={styles.held}
-          style={{ translate: `${drag.x}px ${drag.y}px` }}
-          aria-hidden="true"
-        >
-          {labelOf(dragged, definitions)}
-          <span className={styles.heldSummary}>{summaryOf(dragged, definitions)}</span>
-        </div>
+        <Held drag={drag}>
+          {labelOf(dragged, definitions)} <span>{summaryOf(dragged, definitions)}</span>
+        </Held>
       )}
     </div>
   );
 }
 
-/** A place on the page as the name of a gap, and back again. */
+/** A place on the page, as the name of a gap, and back again. */
 function toGap(place: Place): string {
   return JSON.stringify([place.parentId, place.beforeId]);
 }
@@ -125,7 +125,11 @@ function Level(props: LevelProps) {
         <ol className={styles.list}>
           {nodes.map((node, index) => (
             <li key={node.id} data-dragged={node.id === props.draggedId || undefined}>
-              <Gap place={{ parentId, beforeId: node.id }} depth={depth} target={target} />
+              <Gap
+                name={toGap({ parentId, beforeId: node.id })}
+                target={target}
+                style={atDepth(depth)}
+              />
               <Row
                 {...props}
                 node={node}
@@ -136,33 +140,12 @@ function Level(props: LevelProps) {
           ))}
         </ol>
       )}
-      <Gap place={{ parentId, beforeId: null }} depth={depth} target={target} />
+      <Gap
+        name={toGap({ parentId, beforeId: null })}
+        target={target}
+        style={atDepth(depth)}
+      />
     </>
-  );
-}
-
-/**
- * A place a component can be dropped. It takes up no room, and is only drawn,
- * as a line, while it is where a drag would drop.
- */
-function Gap({
-  place,
-  depth,
-  target,
-}: {
-  place: Place;
-  depth: number;
-  target: string | null;
-}) {
-  const gap = toGap(place);
-  return (
-    <div
-      className={styles.gap}
-      style={atDepth(depth)}
-      data-gap={gap}
-      data-target={gap === target || undefined}
-      aria-hidden="true"
-    />
   );
 }
 
@@ -264,9 +247,9 @@ function Row(props: RowProps) {
             gap is half way down its row, between the ones above and below. */}
         {isFolded && (
           <Gap
-            place={{ parentId: node.id, beforeId: null }}
-            depth={depth + 1}
+            name={toGap({ parentId: node.id, beforeId: null })}
             target={target}
+            style={atDepth(depth + 1)}
           />
         )}
       </div>
