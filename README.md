@@ -38,7 +38,7 @@ Other commands:
 
 | Command | What it does |
 | --- | --- |
-| `npm run seed` | Adds any missing demo site or page. Never overwrites a page you have edited. |
+| `npm run seed` | Writes both demo sites from `seed/sites.json` and adds any missing page. Never overwrites a page you have edited. |
 | `npm run seed -- --reset` | Deletes every site, page and uploaded image, then seeds again. |
 | `npm test` | Runs the unit tests (Node's built-in test runner). |
 | `npm run typecheck` / `npm run lint` | TypeScript and ESLint. |
@@ -357,6 +357,12 @@ answers on, its navigation and its theme (`src/site/types.ts`). The theme is
 a set of design tokens: nine colours, two font stacks, heading weight, case
 and spacing, and two corner radii.
 
+Both sites, with their themes, come from `seed/sites.json`. The brief says
+sites are seeded and not edited in the manager, so there is no screen for
+them. To change a theme, edit that file and run `npm run seed`. The one choice
+of colour an editor has is a Section's background. The page stores its name,
+such as `brand`, and the theme decides the colour.
+
 Components never read the theme. The site layout turns it into CSS variables
 on `<body>` (`src/site/theme-css.ts`), and `src/renderer/site.css` defines
 three **surfaces** on top of them: the page, a "Subtle" section and a "Brand"
@@ -580,6 +586,8 @@ problems are shown with an icon and words, never colour alone.
 
 - **Sign-in.** The brief says none is needed. Anyone who can reach the
   manager can edit. The server actions are where a check would go.
+- **Editing a site or its theme in the manager.** Left out on purpose: the brief
+  says sites are seeded. "Sites and themes" above says how to change one.
 - **Stretch goals done:** live preview, and reordering. The editor shows the
   page as it is edited, at desktop and phone widths, and a click on the preview
   opens that component's form. Components are reordered, and moved in and out
@@ -591,7 +599,7 @@ problems are shown with an icon and words, never colour alone.
   tree, the tree of pages, validation, page details, page files, uploaded
   images, preview messages, the editor's keys, stored pages and contrast.
   None render components or drive a browser.
-- Deleting a page, and editing a site or its theme in the manager.
+- Deleting a page.
 - Choosing from the images already uploaded, and clearing out those no page
   uses any more. An image stays in the database once it is there.
 - Dragging in the preview itself, and dragging a component to another page. A
