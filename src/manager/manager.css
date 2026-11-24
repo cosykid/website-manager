@@ -301,6 +301,90 @@ a:hover {
   border-radius: 4px;
 }
 
+/* ---------- Trees ---------- */
+
+/* Pages under pages, and components inside components, drawn alike.
+
+   Every row is as wide as its panel, however far in it is, so there is always
+   the same easy target to point at. --depth says how many steps in a row's
+   text starts, and is set on the element: see tree-depth.ts. */
+:root {
+  --tree-edge: 0.625rem; /* from the edge of a row to its text */
+  --tree-indent: 1.125rem; /* one step in */
+  --tree-slot: 1.125rem; /* the room for an icon in front of a name */
+}
+
+.tree-row {
+  --row-fill: transparent;
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: max(2rem, var(--control-height));
+  padding-left: calc(var(--tree-edge) + var(--depth) * var(--tree-indent));
+  border-radius: var(--radius);
+  background: var(--row-fill);
+}
+
+.tree-row:hover,
+.tree-row:focus-within {
+  --row-fill: var(--hover);
+}
+
+.tree-row[data-selected],
+.tree-row[aria-current="page"] {
+  --row-fill: var(--selected);
+}
+
+/* What something holds, beside a line down from the middle of its icon. */
+.tree-children {
+  position: relative;
+}
+
+.tree-children::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  bottom: 0;
+  left: calc(
+    var(--tree-edge) + var(--depth) * var(--tree-indent) + var(--tree-slot) / 2
+  );
+  width: 1px;
+  background: var(--border);
+  pointer-events: none;
+}
+
+.tree-label {
+  overflow: hidden;
+  font-weight: 450;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Something that holds other things. */
+.tree-label[data-strong] {
+  font-weight: 650;
+}
+
+/* The note beside a name. It gives way first when there is little room. */
+.tree-note {
+  flex-shrink: 1000;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* "Unsaved", beside a page whose changes are not saved. */
+.unsaved {
+  flex: none;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  font-style: italic;
+}
+
 /* ---------- Form fields ---------- */
 
 /* Wherever a grid stacks form content, its one column is minmax(0, 1fr).

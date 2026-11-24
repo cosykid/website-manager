@@ -22,7 +22,9 @@ export type PreviewMessage =
   // The preview has loaded and is waiting for a draft.
   | { type: "ready" }
   // A component was clicked in the preview.
-  | { type: "select"; id: string };
+  | { type: "select"; id: string }
+  // A link outside every component was clicked, such as one in the site's menu.
+  | { type: "visit"; path: string };
 
 export function isDraftMessage(value: unknown): value is DraftMessage {
   if (!isPlainObject(value) || value.type !== "draft") return false;
@@ -36,6 +38,14 @@ export function isDraftMessage(value: unknown): value is DraftMessage {
 
 export function isPreviewMessage(value: unknown): value is PreviewMessage {
   if (!isPlainObject(value)) return false;
-  if (value.type === "ready") return true;
-  return value.type === "select" && typeof value.id === "string";
+  switch (value.type) {
+    case "ready":
+      return true;
+    case "select":
+      return typeof value.id === "string";
+    case "visit":
+      return typeof value.path === "string";
+    default:
+      return false;
+  }
 }

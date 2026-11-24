@@ -2,9 +2,12 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { isInstanceTree, isValidPath } from "./shape";
 import {
+  findAncestors,
   findInstance,
+  findPlace,
   insertInstance,
   moveInstance,
+  moveInstanceTo,
   removeInstance,
   updateProps,
 } from "./tree";
@@ -54,6 +57,33 @@ test("insertInstance adds inside a nested container", () => {
   assert.deepEqual(ids(inner?.children ?? []), ["deep", "new"]);
 });
 
+test("insertInstance adds in front of a neighbour, on the page and inside a container", () => {
+  const onPage = insertInstance(samplePage(), null, newInstance, "last");
+  assert.deepEqual(ids(onPage), ["outer", "new", "last"]);
+
+  const inside = insertInstance(samplePage(), "outer", newInstance, "grid");
+  assert.deepEqual(ids(findInstance(inside, "outer")?.children ?? []), [
+    "new",
+    "grid",
+    "inner",
+  ]);
+});
+
+test("findAncestors lists what an instance is inside, outermost first", () => {
+  assert.deepEqual(ids(findAncestors(samplePage(), "deep")), ["outer", "inner"]);
+  assert.deepEqual(findAncestors(samplePage(), "outer"), []);
+  assert.deepEqual(findAncestors(samplePage(), "missing"), []);
+});
+
+test("findPlace says where an instance is", () => {
+  const page = samplePage();
+  assert.deepEqual(findPlace(page, "outer"), { parentId: null, beforeId: "last" });
+  assert.deepEqual(findPlace(page, "last"), { parentId: null, beforeId: null });
+  assert.deepEqual(findPlace(page, "grid"), { parentId: "outer", beforeId: "inner" });
+  assert.deepEqual(findPlace(page, "deep"), { parentId: "inner", beforeId: null });
+  assert.equal(findPlace(page, "missing"), undefined);
+});
+
 test("removeInstance removes a nested instance and what it contains", () => {
   const result = removeInstance(samplePage(), "inner");
   assert.equal(findInstance(result, "inner"), undefined);
@@ -74,6 +104,60 @@ test("moveInstance does nothing at the first and last positions", () => {
   assert.deepEqual(moveInstance(samplePage(), "last", "down"), samplePage());
 });
 
+test("moveInstanceTo re-orders within a container, both ways", () => {
+  const down = moveInstanceTo(samplePage(), "grid", { parentId: "outer", beforeId: null });
+  assert.deepEqual(ids(findInstance(down, "outer")?.children ?? []), ["inner", "grid"]);
+
+  const up = moveInstanceTo(samplePage(), "last", { parentId: null, beforeId: "outer" });
+  assert.deepEqual(ids(up), ["last", "outer"]);
+});
+
+test("moveInstanceTo moves into a container, and takes along what is inside", () => {
+  const into = moveInstanceTo(samplePage(), "last", { parentId: "inner", beforeId: "deep" });
+  assert.deepEqual(ids(into), ["outer"]);
+  assert.deepEqual(ids(findInstance(into, "inner")?.children ?? []), ["last", "deep"]);
+
+  const outOf = moveInstanceTo(samplePage(), "inner", { parentId: null, beforeId: null });
+  assert.deepEqual(ids(outOf), ["outer", "last", "inner"]);
+  assert.deepEqual(ids(findInstance(outOf, "outer")?.children ?? []), ["grid"]);
+  assert.deepEqual(ids(findInstance(outOf, "inner")?.children ?? []), ["deep"]);
+});
+
+test("moveInstanceTo leaves the tree alone when the instance is already there", () => {
+  const page = samplePage();
+  // The gap in front of it, and the gap behind it.
+  assert.equal(moveInstanceTo(page, "grid", { parentId: "outer", beforeId: "grid" }), page);
+  assert.equal(moveInstanceTo(page, "grid", { parentId: "outer", beforeId: "inner" }), page);
+  assert.equal(moveInstanceTo(page, "last", { parentId: null, beforeId: null }), page);
+});
+
+test("moveInstanceTo never puts an instance inside itself, or somewhere that does not exist", () => {
+  const page = samplePage();
+  assert.equal(moveInstanceTo(page, "outer", { parentId: "outer", beforeId: null }), page);
+  assert.equal(moveInstanceTo(page, "outer", { parentId: "inner", beforeId: "deep" }), page);
+  assert.equal(moveInstanceTo(page, "last", { parentId: "missing", beforeId: null }), page);
+  assert.equal(moveInstanceTo(page, "missing", { parentId: null, beforeId: null }), page);
+});
+
+test("moveInstanceTo loses nothing and copies nothing, whatever is moved where", () => {
+  const everyId = ["outer", "grid", "inner", "deep", "last"];
+  const allIds = (nodes: ComponentInstance[]): string[] =>
+    nodes.flatMap((node) => [node.id, ...allIds(node.children ?? [])]);
+
+  for (const id of everyId) {
+    for (const parentId of [null, ...everyId]) {
+      for (const beforeId of [null, ...everyId]) {
+        const result = moveInstanceTo(samplePage(), id, { parentId, beforeId });
+        assert.deepEqual(
+          allIds(result).sort(),
+          [...everyId].sort(),
+          `${id} to ${parentId}, before ${beforeId}`,
+        );
+      }
+    }
+  }
+});
+
 test("updateProps replaces the props of one nested instance", () => {
   const result = updateProps(samplePage(), "grid", { title: "Coaches" });
   assert.deepEqual(findInstance(result, "grid")?.props, { title: "Coaches" });
@@ -85,6 +169,7 @@ test("edits leave the original tree untouched", () => {
   insertInstance(original, "inner", newInstance);
   removeInstance(original, "grid");
   moveInstance(original, "inner", "up");
+  moveInstanceTo(original, "deep", { parentId: null, beforeId: "outer" });
   updateProps(original, "grid", { title: "Changed" });
   assert.deepEqual(original, samplePage());
 });

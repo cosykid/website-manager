@@ -12,6 +12,12 @@ const paths = {
   problem: "M12 8v5M12 16.5v.5M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18",
   next: "m9 6 6 6-6 6",
   back: "m15 6-6 6 6 6",
+  page: "M6 3h8l4 4v14H6zM14 3v4h4",
+  // A component that holds others, and one that does not.
+  container: "M4 4h16v16H4zM8 8h8v3H8zM8 14h8v2H8z",
+  component: "M4 8h16v8H4z",
+  // Six dots: something that can be dragged. Drawn with a thicker line.
+  grip: "M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01",
 } as const;
 
 type IconProps = {

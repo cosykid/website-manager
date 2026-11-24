@@ -1,0 +1,60 @@
+/* The site's pages, at the top of the editor's left side. The rows, the indent
+   and the guide lines are in manager.css, under "Trees". */
+
+.pages {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.125rem;
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: var(--tree-edge);
+}
+
+/* Room for about eight pages. A site with more scrolls here, so that the
+   page's components below are never pushed out of reach. */
+.list {
+  max-height: 18rem;
+  overflow-y: auto;
+}
+
+.level {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.page {
+  gap: 0.5rem;
+  padding-right: 0.625rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.page svg {
+  flex: none;
+  width: var(--tree-slot);
+  color: var(--text-muted);
+}
+
+.page:focus-visible {
+  outline-offset: -2px;
+}
+
+/* The page that is open: filled and bolder, two signs and not colour alone. */
+.page[aria-current="page"] {
+  --row-fill: var(--selected);
+}
+
+.page[aria-current="page"] :global(.tree-label) {
+  font-weight: 650;
+}
+
+/* The path gives way first when there is not room for everything. */
+.page :global(.tree-note) {
+  flex: 1;
+  text-align: right;
+}

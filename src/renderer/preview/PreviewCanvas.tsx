@@ -39,9 +39,9 @@ export function PreviewCanvas({ initialContent }: { initialContent: ComponentIns
     return () => window.removeEventListener("message", receive);
   }, []);
 
-  // A click picks the component under it. Nothing in a preview goes
-  // anywhere: links in the header, the footer and the components all stop
-  // here.
+  // A click picks the component under it. No link in a preview goes anywhere
+  // by itself. A link in the site's own menu is passed on, so that the editor
+  // can open the page it leads to.
   useEffect(() => {
     function pick(event: MouseEvent) {
       event.preventDefault();
@@ -50,7 +50,13 @@ export function PreviewCanvas({ initialContent }: { initialContent: ComponentIns
       const id = event.target
         .closest("[data-instance-id]")
         ?.getAttribute("data-instance-id");
-      if (id) tellEditor({ type: "select", id });
+      if (id) {
+        tellEditor({ type: "select", id });
+        return;
+      }
+
+      const path = event.target.closest("header a")?.getAttribute("href");
+      if (path) tellEditor({ type: "visit", path });
     }
 
     document.addEventListener("click", pick);

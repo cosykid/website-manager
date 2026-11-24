@@ -36,12 +36,15 @@ test("a draft is refused when its page or its selection is malformed", () => {
   assert.equal(isDraftMessage(null), false);
 });
 
-test("the preview's two messages are accepted and anything else is refused", () => {
+test("the preview's messages are accepted and anything else is refused", () => {
   assert.equal(isPreviewMessage({ type: "ready" }), true);
   assert.equal(isPreviewMessage({ type: "select", id: "intro" }), true);
+  assert.equal(isPreviewMessage({ type: "visit", path: "/squad" }), true);
 
   assert.equal(isPreviewMessage({ type: "select" }), false);
   assert.equal(isPreviewMessage({ type: "select", id: 7 }), false);
+  assert.equal(isPreviewMessage({ type: "visit" }), false);
+  assert.equal(isPreviewMessage({ type: "visit", path: null }), false);
   assert.equal(isPreviewMessage({ type: "draft", content: [], selectedId: null }), false);
   assert.equal(isPreviewMessage(undefined), false);
 });

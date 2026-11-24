@@ -1,5 +1,5 @@
-/* The editor: a toolbar, then two sides. The left lists what can be edited
-   and opens one form at a time. The right is the live preview. */
+/* The editor: a toolbar, then up to three columns. The list of what there is
+   to edit, the form for what is chosen, and the live preview. */
 
 .toolbar {
   z-index: 1;
@@ -95,11 +95,11 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
-/* The left side: the list, or the one form that is open. The side padding is
-   the gutter less a row's own padding, so the text in a row lines up with
-   the toolbar above. The space at the bottom keeps the last control clear of
-   the "Undo" notice. */
-.panel {
+/* The list and the form. The side padding is the gutter less a row's own
+   padding, so the text in a row lines up with the toolbar above. The space at
+   the bottom keeps the last control clear of the "Undo" notice. */
+.listPanel,
+.formPanel {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-content: start;
@@ -107,54 +107,51 @@
   padding: 0.875rem calc(var(--gutter) - 0.625rem) 5.5rem;
 }
 
-.outline {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0.25rem;
+/* Keeps a list of pages apart from the page that is open. */
+.listPanel > section {
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
 }
 
-/* Lines up with the text inside the rows under it. */
-.outlineHeading,
-.outlineEmpty {
-  padding-inline: 0.625rem;
+/* The page itself, as the top of the tree of what is on it. */
+.pageHeading {
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
 }
 
-.outlineEmpty {
-  padding-block: 0.25rem 0.5rem;
-}
-
-/* "Page details" opens a form like a component does, so it looks like a row. */
-.detailsRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.pageRow {
   gap: 0.5rem;
   width: 100%;
-  min-height: max(2.25rem, var(--control-height));
-  padding: 0.375rem 0.625rem;
+  padding-right: 0.625rem;
   border: 0;
-  border-radius: var(--radius);
-  background: transparent;
   color: inherit;
   font: inherit;
-  font-weight: 550;
   text-align: left;
   cursor: pointer;
 }
 
-.detailsRow:hover {
-  background: var(--hover);
+.pageRow svg {
+  flex: none;
+  width: var(--tree-slot);
+  color: var(--text-muted);
 }
 
-.detailsRow:focus-visible {
+.pageRow:focus-visible {
   outline-offset: -2px;
 }
 
-/* One form, in the list's place: "Back", then the form. */
-.formView {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0.75rem;
+.outlineEmpty {
+  padding: 0.25rem 0.625rem 0.625rem calc(var(--tree-edge) + 2 * var(--tree-indent));
+}
+
+/* Starts where the components it adds to start. */
+.addComponent {
+  margin-left: calc(var(--tree-edge) + var(--tree-indent));
+}
+
+.addComponent[data-variant="quiet"] {
+  padding-inline: 0.3125rem 0.625rem;
 }
 
 /* Set in by a row's padding, so the fields line up with the rows of the
@@ -177,23 +174,85 @@
   outline: none;
 }
 
-/* The right side: the preview. Tall enough to show a good part of the page
-   on any screen. */
+.hint {
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+/* What the component is inside: "Home > Section >". Sits close over the name
+   of the component, which is its last step. */
+.trail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.25rem;
+  margin: 0 0 -1rem;
+  padding: 0;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  list-style: none;
+}
+
+.trail li {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.trail li::after {
+  content: "/";
+}
+
+.trail button {
+  min-width: 0;
+  min-height: max(1.75rem, 24px);
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.trail button:hover {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/* Tall enough to show a good part of the page on any screen. */
 .previewSide {
   display: grid;
   grid-template-rows: minmax(0, 1fr);
   height: max(24rem, calc(100dvh - 12rem));
 }
 
-/* On a narrow screen only the chosen side is shown. */
+/* Without room for all three, the form takes the list's place while it is
+   open. The preview shows beside it, or behind "Preview" on a narrow screen. */
+@media (width < 80rem) {
+  .columns[data-open="form"] .listPanel,
+  .columns[data-open="list"] .formPanel {
+    display: none;
+  }
+
+  /* In the list, nothing is open yet. */
+  .pageRow[data-selected]:not(:hover, :focus-visible) {
+    --row-fill: transparent;
+  }
+}
+
 @media (width < 50rem) {
   .columns[data-narrow-side="edit"] .previewSide,
-  .columns[data-narrow-side="preview"] .panel {
+  .columns[data-narrow-side="preview"] .listPanel,
+  .columns[data-narrow-side="preview"] .formPanel {
     display: none;
   }
 }
 
-/* With room for both, the form sits beside the preview. The left side takes
+/* With room for two, the list or the form sits beside the preview, and takes
    about a third of the window, within limits. */
 @media (min-width: 50rem) {
   .sides {
@@ -204,7 +263,8 @@
     grid-template-columns: clamp(22rem, 32vw, 28rem) minmax(0, 1fr);
   }
 
-  .panel {
+  .listPanel,
+  .formPanel {
     border-right: 1px solid var(--border);
   }
 
@@ -217,8 +277,47 @@
   }
 }
 
+/* With room for all three: the list, the preview, the form. The form comes
+   second in the page and is only drawn last, so the keyboard goes straight
+   from the list to the form, and not through the preview in between.
+
+   Below this width the preview would be too small to read as a desktop
+   screen: see "cramped" in PreviewPane.tsx. */
+@media (min-width: 80rem) {
+  .columns {
+    grid-template-columns:
+      clamp(18rem, 20vw, 22rem) minmax(0, 1fr) clamp(20rem, 23vw, 26rem);
+  }
+
+  .columns > * {
+    grid-row: 1;
+  }
+
+  .listPanel {
+    grid-column: 1;
+    padding-right: 0.625rem;
+  }
+
+  .previewSide {
+    grid-column: 2;
+  }
+
+  .formPanel {
+    grid-column: 3;
+    padding-left: 0.625rem;
+    border-right: 0;
+    border-left: 1px solid var(--border);
+  }
+
+  /* The list is right there. */
+  .back {
+    display: none;
+  }
+}
+
 /* With room both ways, the window itself stops scrolling. The toolbar stays
-   put, the left side scrolls on its own, and the preview fills the rest. */
+   put, the list and the form scroll on their own, and the preview fills the
+   rest. */
 @media (min-width: 50rem) and (min-height: 40rem) {
   .editor {
     display: grid;
@@ -231,7 +330,8 @@
     min-height: 0;
   }
 
-  .panel {
+  .listPanel,
+  .formPanel {
     overflow-y: auto;
   }
 
@@ -244,8 +344,8 @@
 }
 
 /* "Card removed. Undo" floats at the bottom of the window. It is in view
-   wherever the removal happened, and nothing on the page moves when it
-   appears or goes. */
+   wherever the change happened, and nothing on the page moves when it appears
+   or goes. */
 .noticeArea {
   position: fixed;
   inset-inline: 0;

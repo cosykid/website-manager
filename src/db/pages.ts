@@ -1,5 +1,6 @@
 import { MongoServerError, ObjectId } from "mongodb";
 import { cache } from "react";
+import type { PageLink } from "@/page-model/page-tree";
 import type { ComponentInstance, Page } from "@/page-model/types";
 import { pagesCollection, type PageRecord } from "./collections";
 
@@ -24,6 +25,16 @@ export async function listPages(siteId: string): Promise<Page[]> {
   const pages = await pagesCollection();
   const records = await pages.find({ siteId }).sort({ path: 1 }).toArray();
   return records.map(toPage);
+}
+
+/** A site's pages without their content, to list them beside the editor. */
+export async function listPageLinks(siteId: string): Promise<PageLink[]> {
+  const pages = await pagesCollection();
+  const records = await pages
+    .find({ siteId })
+    .project<Pick<PageRecord, "_id" | "title" | "path">>({ title: 1, path: 1 })
+    .toArray();
+  return records.map(({ _id, title, path }) => ({ id: _id.toString(), title, path }));
 }
 
 /** Where every page of every site is, without its content. */

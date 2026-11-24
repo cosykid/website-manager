@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getPage } from "@/db/pages";
+import { getPage, listPageLinks } from "@/db/pages";
 import { getSite } from "@/db/sites";
 import { definitions } from "@/library/definitions";
 import { PageEditor } from "@/manager/PageEditor";
@@ -28,6 +28,8 @@ export default async function EditPagePage({ params }: Props) {
 
   return (
     <PageEditor
+      // A fresh editor for each page, so nothing carries over from the last.
+      key={page.id}
       site={{
         id: site.id,
         name: site.name,
@@ -38,6 +40,7 @@ export default async function EditPagePage({ params }: Props) {
         },
       }}
       siteOrigin={await getSiteOrigin(site)}
+      pages={await listPageLinks(site.id)}
       page={{
         id: page.id,
         title: page.title,

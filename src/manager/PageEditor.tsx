@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { ComponentDefinition } from "@/library/types";
 import {
@@ -9,23 +11,33 @@ import {
   type IssuesByInstance,
 } from "@/library/validate";
 import { checkPageDetails, PATH_TAKEN_MESSAGE } from "@/page-model/details";
+import type { PageLink } from "@/page-model/page-tree";
 import {
+  findAncestors,
   findInstance,
+  findPlace,
   insertInstance,
   moveInstance,
+  moveInstanceTo,
   removeInstance,
   updateProps,
+  type Place,
 } from "@/page-model/tree";
 import type { ComponentInstance } from "@/page-model/types";
 import { savePageAction } from "./actions";
 import { ComponentPicker } from "./ComponentPicker";
+import { useDrafts, type PageValues } from "./Drafts";
 import { GroupFields } from "./FieldEditor";
 import { Icon } from "./Icon";
+import { labelOf } from "./instance-names";
 import { Outline, rowId } from "./Outline";
 import styles from "./PageEditor.module.css";
 import { PageJsonDialog } from "./PageJsonDialog";
+import { PageList } from "./PageList";
+import { PlacedIn } from "./PlacedIn";
 import { PreviewPane } from "./PreviewPane";
 import { SiteMark } from "./SiteMark";
+import { atDepth } from "./tree-depth";
 
 type PageEditorProps = {
   site: {
@@ -36,6 +48,8 @@ type PageEditorProps = {
   };
   /** The public address of the site, e.g. "http://ironbarks.localhost:3000". */
   siteOrigin: string;
+  /** Every page of the site, to move from one to another. */
+  pages: PageLink[];
   page: { id: string; title: string; path: string; content: ComponentInstance[] };
   /**
    * The component library, as data. This is all the editor knows about the
@@ -44,13 +58,13 @@ type PageEditorProps = {
   definitions: Record<string, ComponentDefinition>;
 };
 
-/** What the left side shows: the list of everything on the page, or one form. */
+/** Which form is open, if any. */
 type Open =
   | { kind: "list" }
   | { kind: "details" }
   | { kind: "component"; id: string };
 
-/** The HTML id of the "Page details" row, for putting focus back on it. */
+/** The HTML id of the page's own row, for putting focus back on it. */
 const detailsRowId = "details-row";
 
 /**
@@ -58,30 +72,45 @@ const detailsRowId = "details-row";
  *
  * The page being edited lives here, in the browser, as the same tree that is
  * stored in the database. Every edit swaps in a new tree using the functions
- * in src/page-model/tree.ts. Nothing reaches the server until "Save page",
- * which sends the whole page so it is never left half updated.
+ * in src/page-model/tree.ts, and is kept as a draft (see Drafts.tsx). Nothing
+ * reaches the server until "Save page", which sends the whole page so it is
+ * never left half updated.
  *
- * The screen has two sides. The left starts as a list of what can be edited:
- * the page details, then every component. Choosing one opens its form in the
- * list's place, and "Back" returns to the list. The right is a live preview:
- * the page as visitors will see it, redrawn on every edit. Clicking a
- * component there opens its form too.
+ * The screen has three parts: what there is to edit (the site's pages, then
+ * this page's components), a form for the one that is chosen, and a live
+ * preview of the page as visitors will see it. A wide window shows all three.
+ * A smaller one shows the form in the list's place, with "Back" to return.
  */
-export function PageEditor({ site, siteOrigin, page, definitions }: PageEditorProps) {
-  const [title, setTitle] = useState(page.title);
-  const [path, setPath] = useState(page.path);
-  // Filling gaps first means a prop added to a component after this page was
-  // saved still shows up in its form.
-  const [content, setContent] = useState(() => fillTree(page.content, definitions));
+export function PageEditor({
+  site,
+  siteOrigin,
+  pages,
+  page,
+  definitions,
+}: PageEditorProps) {
+  const router = useRouter();
+
+  // The page as it was last saved. Filling gaps first means a prop added to a
+  // component after this page was saved still shows up in its form.
+  const [saved, setSaved] = useState<PageValues>(() => ({
+    title: page.title,
+    path: page.path,
+    content: fillTree(page.content, definitions),
+  }));
+  // The page as it stands now: with its unsaved changes, if it has any.
+  const { drafts, keepDraft, dropDraft } = useDrafts();
+  const draft = drafts[page.id];
+  const { title, path, content } = draft ?? saved;
+  const pageTitle = title.trim() || "Untitled page";
+
   const [open, setOpen] = useState<Open>({ kind: "list" });
+  // The components in the list that are folded shut.
+  const [folded, setFolded] = useState<string[]>([]);
   // A narrow screen has room for one side at a time. This says which.
   const [narrowSide, setNarrowSide] = useState<"edit" | "preview">("edit");
 
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
   const [failure, setFailure] = useState("");
-  // Where the public page lives right now. It only moves when a save succeeds.
-  const [savedPath, setSavedPath] = useState(page.path);
   // A path the server refused because another page already uses it.
   const [pathTaken, setPathTaken] = useState("");
   // Problems are pointed out only once a save has been tried, so a form that
@@ -93,18 +122,15 @@ export function PageEditor({ site, siteOrigin, page, definitions }: PageEditorPr
   const [picker, setPicker] = useState<{ parentId: string | null } | null>(null);
   // Whether the "Page JSON" dialog is open.
   const [jsonOpen, setJsonOpen] = useState(false);
-  // The last change that took something away: what to say about it, and the
-  // page just before and just after. "Undo" is offered for as long as nothing
-  // else has changed since.
+  // The last change that moved something or took something away: what to say
+  // about it, and the page just before and just after. "Undo" is offered for
+  // as long as nothing else has changed since.
   const [undoable, setUndoable] = useState<{
     message: string;
     before: ComponentInstance[];
     after: ComponentInstance[];
   } | null>(null);
 
-  // Counts edits, so a save that finishes after a newer edit does not claim
-  // the page is saved.
-  const editCount = useRef(0);
   const formHeading = useRef<HTMLHeadingElement>(null);
   // Whether the next change of what is open should move keyboard focus, and
   // the row to put it on when a form closes.
@@ -119,14 +145,6 @@ export function PageEditor({ site, siteOrigin, page, definitions }: PageEditorPr
   const detailProblems = (detailErrors.title ? 1 : 0) + (pathError ? 1 : 0);
   const canUndo = undoable !== null && undoable.after === content;
 
-  // Warn before the tab is closed or reloaded with unsaved work.
-  useEffect(() => {
-    if (!hasUnsavedChanges) return;
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [hasUnsavedChanges]);
-
   // Keyboard focus follows the left side: to a form when one opens, and back
   // to the row it was opened from when it closes.
   useEffect(() => {
@@ -137,17 +155,31 @@ export function PageEditor({ site, siteOrigin, page, definitions }: PageEditorPr
     else formHeading.current?.focus();
   }, [open]);
 
-  /** Opens a form on the left: the page details, or one component's. */
+  /** Opens a form: the page details, or one component's. */
   function openForm(next: Open) {
     moveFocus.current = true;
     setOpen(next);
     // On a narrow screen the form may be behind the preview.
     setNarrowSide("edit");
+
+    // The row it belongs to may be folded away inside another.
+    if (next.kind === "component") {
+      const around = findAncestors(content, next.id).map((ancestor) => ancestor.id);
+      setFolded(folded.filter((id) => !around.includes(id)));
+    }
   }
 
   /** A component was clicked in the preview. */
   function openFromPreview(id: string) {
     if (findInstance(content, id)) openForm({ kind: "component", id });
+  }
+
+  /** A link in the site's own menu was clicked in the preview. */
+  function openPageAt(wantedPath: string) {
+    const target = pages.find((other) => other.path === wantedPath);
+    if (target && target.id !== page.id) {
+      router.push(`/sites/${site.id}/pages/${target.id}`);
+    }
   }
 
   function backToList() {
@@ -156,15 +188,30 @@ export function PageEditor({ site, siteOrigin, page, definitions }: PageEditorPr
     setOpen({ kind: "list" });
   }
 
-  function markChanged() {
-    editCount.current += 1;
-    setHasUnsavedChanges(true);
+  function foldRow(id: string, shut: boolean) {
+    setFolded(shut ? [...folded, id] : folded.filter((other) => other !== id));
+  }
+
+  /** Every edit to the page goes through here. */
+  function change(changes: Partial<PageValues>) {
+    keepDraft(page.id, { title, path, content, ...changes });
     setSaveState("idle");
   }
 
-  function changeContent(next: ComponentInstance[]) {
-    setContent(next);
-    markChanged();
+  /** An edit that "Undo" can take back, and what to say about it. */
+  function changeWithUndo(after: ComponentInstance[], message: string) {
+    setUndoable({ message, before: content, after });
+    change({ content: after });
+  }
+
+  function undo() {
+    if (!undoable) return;
+    change({ content: undoable.before });
+    // The open form may belong to a component the undo takes away again.
+    if (open.kind === "component" && !findInstance(undoable.before, open.id)) {
+      setOpen({ kind: "list" });
+    }
+    setUndoable(null);
   }
 
   function addComponent(type: string) {
@@ -178,9 +225,23 @@ export function PageEditor({ site, siteOrigin, page, definitions }: PageEditorPr
     };
     if (definition.acceptsChildren) instance.children = [];
 
-    changeContent(insertInstance(content, picker.parentId, instance));
+    change({ content: insertInstance(content, picker.parentId, instance) });
     openForm({ kind: "component", id: instance.id });
     setPicker(null);
+  }
+
+  function moveComponentTo(id: string, place: Place) {
+    const instance = findInstance(content, id);
+    const after = moveInstanceTo(content, id, place);
+    // Dropped back where it was.
+    if (!instance || after === content) return;
+
+    // "Banner moved." within a list, "Banner moved into Section." between two.
+    const changesParent = findPlace(content, id)?.parentId !== place.parentId;
+    const parent = place.parentId ? findInstance(content, place.parentId) : undefined;
+    const into = parent ? `into ${labelOf(parent, definitions)}` : "on to the page";
+    const label = labelOf(instance, definitions);
+    changeWithUndo(after, changesParent ? `${label} moved ${into}.` : `${label} moved.`);
   }
 
   function removeComponent(id: string) {
@@ -188,9 +249,7 @@ export function PageEditor({ site, siteOrigin, page, definitions }: PageEditorPr
     if (!instance) return;
 
     const after = removeInstance(content, id);
-    const label = definitions[instance.type]?.label ?? "Component";
-    setUndoable({ message: `${label} removed.`, before: content, after });
-    changeContent(after);
+    changeWithUndo(after, `${labelOf(instance, definitions)} removed.`);
     // The open form may belong to what was removed. Show the list again.
     if (open.kind === "component" && !findInstance(after, open.id)) {
       setOpen({ kind: "list" });
@@ -201,8 +260,8 @@ export function PageEditor({ site, siteOrigin, page, definitions }: PageEditorPr
     if (!selected) return;
     const after = updateProps(content, selected.id, props);
     // The form says when a change removed something, such as a card.
-    if (removed) setUndoable({ message: `${removed} removed.`, before: content, after });
-    changeContent(after);
+    if (removed) changeWithUndo(after, `${removed} removed.`);
+    else change({ content: after });
   }
 
   /**
@@ -211,28 +270,13 @@ export function PageEditor({ site, siteOrigin, page, definitions }: PageEditorPr
    */
   function replaceComponents(fileName: string, fromFile: ComponentInstance[]) {
     const after = fillTree(fromFile, definitions);
-    setUndoable({
-      message: `Components replaced from ${fileName}.`,
-      before: content,
-      after,
-    });
-    changeContent(after);
+    changeWithUndo(after, `Components replaced from ${fileName}.`);
     // A file can hold props that do not suit their component. Mark them
     // straight away, as a refused save would.
     if (Object.keys(validateTree(after, definitions)).length > 0) setShowProblems(true);
     // An open form may belong to a component that is no longer on the page.
     setOpen({ kind: "list" });
     setJsonOpen(false);
-  }
-
-  function undo() {
-    if (!undoable) return;
-    changeContent(undoable.before);
-    // The open form may belong to a component the undo takes away again.
-    if (open.kind === "component" && !findInstance(undoable.before, open.id)) {
-      setOpen({ kind: "list" });
-    }
-    setUndoable(null);
   }
 
   /**
@@ -246,6 +290,7 @@ export function PageEditor({ site, siteOrigin, page, definitions }: PageEditorPr
       (open.kind === "details" && detailsHaveProblem);
 
     if (!openFormHasProblem) setOpen({ kind: "list" });
+    setFolded([]);
     setNarrowSide("edit");
   }
 
@@ -262,22 +307,17 @@ export function PageEditor({ site, siteOrigin, page, definitions }: PageEditorPr
       return;
     }
 
-    const editsWhenSent = editCount.current;
     setSaveState("saving");
     try {
       const result = await savePageAction({ pageId: page.id, title, path, content });
 
       if (result.ok) {
-        setSavedPath(path.trim());
+        // The server trims these two, so show them as they were stored.
+        setSaved({ title: title.trim(), path: path.trim(), content });
+        dropDraft(page.id, draft);
         setShowProblems(false);
         setPathTaken("");
-        if (editCount.current === editsWhenSent) {
-          setHasUnsavedChanges(false);
-          setSaveState("saved");
-        } else {
-          // Something changed while the save was on its way.
-          setSaveState("idle");
-        }
+        setSaveState("saved");
         return;
       }
 
@@ -296,7 +336,7 @@ export function PageEditor({ site, siteOrigin, page, definitions }: PageEditorPr
   const status =
     saveState === "saving"
       ? "Saving…"
-      : hasUnsavedChanges
+      : draft
         ? "Unsaved changes. The live page shows your last save."
         : saveState === "saved"
           ? "Saved. The live page is up to date."
@@ -307,22 +347,19 @@ export function PageEditor({ site, siteOrigin, page, definitions }: PageEditorPr
       <header className={styles.toolbar}>
         <div className={styles.location}>
           <nav aria-label="Breadcrumb">
-            {/* Plain links, so leaving with unsaved changes triggers the
-                browser's "leave site?" warning. */}
             <ol className="breadcrumbs">
               <li>
-                {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
-                <a href="/">Sites</a>
+                <Link href="/">Sites</Link>
               </li>
               <li>
-                <a className={styles.siteCrumb} href={`/sites/${site.id}`}>
+                <Link className={styles.siteCrumb} href={`/sites/${site.id}`}>
                   <SiteMark colors={site.colors} size="small" />
                   {site.name}
-                </a>
+                </Link>
               </li>
             </ol>
           </nav>
-          <h1 className={styles.title}>{title.trim() || "Untitled page"}</h1>
+          <h1 className={styles.title}>{pageTitle}</h1>
         </div>
 
         <div className={styles.toolbarActions}>
@@ -335,7 +372,7 @@ export function PageEditor({ site, siteOrigin, page, definitions }: PageEditorPr
           </button>
           <a
             className="button"
-            href={`${siteOrigin}${savedPath}`}
+            href={`${siteOrigin}${saved.path}`}
             target="_blank"
             rel="noreferrer"
           >
@@ -383,17 +420,31 @@ export function PageEditor({ site, siteOrigin, page, definitions }: PageEditorPr
         </button>
       </div>
 
-      <div className={styles.columns} data-narrow-side={narrowSide}>
-        <div className={styles.panel}>
-          {open.kind === "list" && (
-            <>
+      <div
+        className={styles.columns}
+        data-open={open.kind === "list" ? "list" : "form"}
+        data-narrow-side={narrowSide}
+      >
+        <div className={styles.listPanel}>
+          <PageList siteId={site.id} pages={pages} currentId={page.id} />
+
+          {/* The page and everything on it, as one tree: the page's own row,
+              then its components one step in. */}
+          <section aria-labelledby="page-heading">
+            <h2 id="page-heading" className={styles.pageHeading}>
               <button
                 type="button"
                 id={detailsRowId}
-                className={styles.detailsRow}
+                className={`tree-row ${styles.pageRow}`}
+                style={atDepth(0)}
+                data-selected={selected === undefined || undefined}
                 onClick={() => openForm({ kind: "details" })}
               >
-                Page details
+                <Icon name="page" />
+                <span className="tree-label" data-strong>
+                  {pageTitle}
+                </span>{" "}
+                <span className="tree-note">Page details</span>{" "}
                 {detailProblems > 0 && (
                   <span className="problem-count">
                     <Icon name="problem" size={14} />
@@ -401,184 +452,212 @@ export function PageEditor({ site, siteOrigin, page, definitions }: PageEditorPr
                   </span>
                 )}
               </button>
+            </h2>
 
-              <section className={styles.outline} aria-labelledby="outline-heading">
-                <h2 id="outline-heading" className={`section-heading ${styles.outlineHeading}`}>
-                  Components
-                </h2>
+            <div className="tree-children" style={atDepth(0)}>
+              {content.length === 0 && (
+                <p className={`muted ${styles.outlineEmpty}`}>
+                  This page is empty. Add a component to start building it.
+                </p>
+              )}
 
-                {content.length === 0 && (
-                  <p className={`muted ${styles.outlineEmpty}`}>
-                    This page is empty. Add a component to start building it.
+              <Outline
+                content={content}
+                definitions={definitions}
+                issues={issues}
+                selectedId={selected ? selected.id : null}
+                folded={folded}
+                onFold={foldRow}
+                onSelect={(id) => openForm({ kind: "component", id })}
+                onMove={(id, direction) =>
+                  change({ content: moveInstance(content, id, direction) })
+                }
+                onMoveTo={moveComponentTo}
+                onRemove={removeComponent}
+                onAddInside={(parentId) => setPicker({ parentId })}
+              />
+
+              <button
+                type="button"
+                className={`button ${styles.addComponent}`}
+                data-variant={content.length === 0 ? "primary" : "quiet"}
+                onClick={() => setPicker({ parentId: null })}
+              >
+                <Icon name="add" />
+                Add component
+              </button>
+            </div>
+          </section>
+        </div>
+
+        <div className={styles.formPanel}>
+          <div className={styles.back}>
+            <button type="button" className="button" data-variant="quiet" onClick={backToList}>
+              <Icon name="back" />
+              Back
+              <span className="visually-hidden"> to the list</span>
+            </button>
+          </div>
+
+          <section className={styles.form} aria-labelledby="form-heading">
+            {!selected && (
+              <>
+                <div className={styles.formHeading}>
+                  <h2 id="form-heading" ref={formHeading} tabIndex={-1}>
+                    Page details
+                  </h2>
+                  <p className="muted">
+                    What this page is called, and where it lives on {site.name}.
+                  </p>
+                </div>
+
+                <div className="field">
+                  <label className="label" htmlFor="page-title">
+                    Title
+                  </label>
+                  <input
+                    id="page-title"
+                    className="input"
+                    value={title}
+                    aria-invalid={detailErrors.title ? true : undefined}
+                    aria-describedby={detailErrors.title ? "page-title-error" : undefined}
+                    onChange={(event) => change({ title: event.target.value })}
+                  />
+                  {detailErrors.title && (
+                    <p className="error" id="page-title-error">
+                      <Icon name="problem" />
+                      {detailErrors.title}
+                    </p>
+                  )}
+                </div>
+
+                <div className="field">
+                  <label className="label" htmlFor="page-path">
+                    Path
+                  </label>
+                  <input
+                    id="page-path"
+                    className="input"
+                    value={path}
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    aria-invalid={pathError ? true : undefined}
+                    aria-describedby={pathError ? "page-path-error" : "page-path-help"}
+                    onChange={(event) => change({ path: event.target.value })}
+                  />
+                  {pathError ? (
+                    <p className="error" id="page-path-error">
+                      <Icon name="problem" />
+                      {pathError}
+                    </p>
+                  ) : (
+                    <p className="help" id="page-path-help">
+                      The address of the page on {site.name}. The home page is
+                      &quot;/&quot;.
+                    </p>
+                  )}
+                </div>
+
+                {open.kind === "list" && content.length > 0 && (
+                  <p className={`muted ${styles.hint}`}>
+                    To edit a component, choose it in the list or click it in the
+                    preview.
                   </p>
                 )}
+              </>
+            )}
 
-                <Outline
-                  nodes={content}
-                  definitions={definitions}
-                  issues={issues}
-                  onSelect={(id) => openForm({ kind: "component", id })}
-                  onMove={(id, direction) => changeContent(moveInstance(content, id, direction))}
-                  onRemove={removeComponent}
-                  onAddInside={(parentId) => setPicker({ parentId })}
-                />
+            {selected && (
+              // What the component is inside, so that its place is clear even
+              // when the list is not showing. Each step opens that form.
+              <nav aria-label="Placed in">
+                <ol className={styles.trail}>
+                  <li>
+                    <button type="button" onClick={() => openForm({ kind: "details" })}>
+                      {pageTitle}
+                    </button>
+                  </li>
+                  {findAncestors(content, selected.id).map((ancestor) => (
+                    <li key={ancestor.id}>
+                      <button
+                        type="button"
+                        onClick={() => openForm({ kind: "component", id: ancestor.id })}
+                      >
+                        {labelOf(ancestor, definitions)}
+                      </button>
+                    </li>
+                  ))}
+                </ol>
+              </nav>
+            )}
 
+            {selected && !selectedDefinition && (
+              <>
+                <div className={styles.formHeading}>
+                  <h2 id="form-heading" ref={formHeading} tabIndex={-1}>
+                    Unknown component
+                  </h2>
+                  <p>
+                    This page uses a component called &quot;{selected.type}&quot;,
+                    which is no longer in the library. Remove it to save the
+                    page.
+                  </p>
+                </div>
                 <div>
                   <button
                     type="button"
                     className="button"
-                    data-variant={content.length === 0 ? "primary" : "quiet"}
-                    onClick={() => setPicker({ parentId: null })}
+                    onClick={() => removeComponent(selected.id)}
                   >
-                    <Icon name="add" />
-                    Add component
+                    Remove component
                   </button>
                 </div>
-              </section>
-            </>
-          )}
+              </>
+            )}
 
-          {open.kind !== "list" && (
-            <div className={styles.formView}>
-              <div>
-                <button
-                  type="button"
-                  className="button"
-                  data-variant="quiet"
-                  onClick={backToList}
-                >
-                  <Icon name="back" />
-                  Back
-                  <span className="visually-hidden"> to the list</span>
-                </button>
-              </div>
+            {selected && selectedDefinition && (
+              <>
+                <div className={styles.formHeading}>
+                  <h2 id="form-heading" ref={formHeading} tabIndex={-1}>
+                    {selectedDefinition.label}
+                  </h2>
+                  <p className="muted">{selectedDefinition.description}</p>
+                </div>
 
-              <section className={styles.form} aria-labelledby="form-heading">
-                {open.kind === "details" && (
-                  <>
-                    <div className={styles.formHeading}>
-                      <h2 id="form-heading" ref={formHeading} tabIndex={-1}>
-                        Page details
-                      </h2>
-                      <p className="muted">
-                        What this page is called, and where it lives on {site.name}.
-                      </p>
-                    </div>
+                <GroupFields
+                  // A new key per component, so one component's open list
+                  // entries don't carry over to the next.
+                  key={selected.id}
+                  fields={selectedDefinition.fields}
+                  value={selected.props}
+                  path=""
+                  shared={{ issues: issues[selected.id] ?? [], idPrefix: selected.id }}
+                  onChange={(props, removed) =>
+                    changeSelectedProps(props as Record<string, unknown>, removed)
+                  }
+                />
 
-                    <div className="field">
-                      <label className="label" htmlFor="page-title">
-                        Title
-                      </label>
-                      <input
-                        id="page-title"
-                        className="input"
-                        value={title}
-                        aria-invalid={detailErrors.title ? true : undefined}
-                        aria-describedby={detailErrors.title ? "page-title-error" : undefined}
-                        onChange={(event) => {
-                          setTitle(event.target.value);
-                          markChanged();
-                        }}
-                      />
-                      {detailErrors.title && (
-                        <p className="error" id="page-title-error">
-                          <Icon name="problem" />
-                          {detailErrors.title}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="field">
-                      <label className="label" htmlFor="page-path">
-                        Path
-                      </label>
-                      <input
-                        id="page-path"
-                        className="input"
-                        value={path}
-                        autoCapitalize="none"
-                        spellCheck={false}
-                        aria-invalid={pathError ? true : undefined}
-                        aria-describedby={pathError ? "page-path-error" : "page-path-help"}
-                        onChange={(event) => {
-                          setPath(event.target.value);
-                          markChanged();
-                        }}
-                      />
-                      {pathError ? (
-                        <p className="error" id="page-path-error">
-                          <Icon name="problem" />
-                          {pathError}
-                        </p>
-                      ) : (
-                        <p className="help" id="page-path-help">
-                          The address of the page on {site.name}. The home page is
-                          &quot;/&quot;.
-                        </p>
-                      )}
-                    </div>
-                  </>
-                )}
-
-                {selected && !selectedDefinition && (
-                  <>
-                    <div className={styles.formHeading}>
-                      <h2 id="form-heading" ref={formHeading} tabIndex={-1}>
-                        Unknown component
-                      </h2>
-                      <p>
-                        This page uses a component called &quot;{selected.type}&quot;,
-                        which is no longer in the library. Remove it to save the
-                        page.
-                      </p>
-                    </div>
-                    <div>
-                      <button
-                        type="button"
-                        className="button"
-                        onClick={() => removeComponent(selected.id)}
-                      >
-                        Remove component
-                      </button>
-                    </div>
-                  </>
-                )}
-
-                {selected && selectedDefinition && (
-                  <>
-                    <div className={styles.formHeading}>
-                      <h2 id="form-heading" ref={formHeading} tabIndex={-1}>
-                        {selectedDefinition.label}
-                      </h2>
-                      <p className="muted">{selectedDefinition.description}</p>
-                    </div>
-
-                    <GroupFields
-                      // A new key per component, so one component's open list
-                      // entries don't carry over to the next.
-                      key={selected.id}
-                      fields={selectedDefinition.fields}
-                      value={selected.props}
-                      path=""
-                      shared={{ issues: issues[selected.id] ?? [], idPrefix: selected.id }}
-                      onChange={(props, removed) =>
-                        changeSelectedProps(props as Record<string, unknown>, removed)
-                      }
-                    />
-                  </>
-                )}
-              </section>
-            </div>
-          )}
+                <PlacedIn
+                  id={selected.id}
+                  content={content}
+                  definitions={definitions}
+                  onMove={(parentId) =>
+                    moveComponentTo(selected.id, { parentId, beforeId: null })
+                  }
+                />
+              </>
+            )}
+          </section>
         </div>
 
         <div className={styles.previewSide}>
           <PreviewPane
             pageId={page.id}
-            pageTitle={title.trim() || "Untitled page"}
+            pageTitle={pageTitle}
             content={content}
             selectedId={selected ? selected.id : null}
             onSelect={openFromPreview}
+            onVisit={openPageAt}
           />
         </div>
       </div>
@@ -612,7 +691,7 @@ export function PageEditor({ site, siteOrigin, page, definitions }: PageEditorPr
           title: title.trim(),
           content,
         }}
-        hasUnsavedChanges={hasUnsavedChanges}
+        hasUnsavedChanges={draft !== undefined}
         onImport={replaceComponents}
         onClose={() => setJsonOpen(false)}
       />

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { DraftsProvider } from "@/manager/Drafts";
 import "@/manager/manager.css";
 
 export const metadata: Metadata = {
@@ -24,7 +25,7 @@ export default function ManagerLayout({ children }: LayoutProps<"/">) {
             Website manager
           </Link>
         </header>
-        {children}
+        <DraftsProvider>{children}</DraftsProvider>
       </body>
     </html>
   );

@@ -21,6 +21,8 @@ type PreviewPaneProps = {
   selectedId: string | null;
   /** Called when a component is clicked in the preview. */
   onSelect: (id: string) => void;
+  /** Called when a link in the site's own menu is clicked in the preview. */
+  onVisit: (path: string) => void;
 };
 
 /**
@@ -28,9 +30,8 @@ type PreviewPaneProps = {
  *
  * The preview is a real page from the public renderer, shown in a frame. So
  * the manager still imports none of the site's components: it only knows the
- * preview's address and the two kinds of message in src/page-model/preview.ts.
- * The editor sends the page each time it changes, and the preview says which
- * component was clicked.
+ * preview's address and the messages in src/page-model/preview.ts. The editor
+ * sends the page each time it changes, and the preview says what was clicked.
  */
 export function PreviewPane({
   pageId,
@@ -38,6 +39,7 @@ export function PreviewPane({
   content,
   selectedId,
   onSelect,
+  onVisit,
 }: PreviewPaneProps) {
   // The size the editor picked, or null while they have not picked one.
   const [picked, setPicked] = useState<Device | null>(null);
@@ -74,11 +76,12 @@ export function PreviewPane({
 
       if (event.data.type === "ready") setTimesReady((times) => times + 1);
       if (event.data.type === "select") onSelect(event.data.id);
+      if (event.data.type === "visit") onVisit(event.data.path);
     }
 
     window.addEventListener("message", receive);
     return () => window.removeEventListener("message", receive);
-  }, [onSelect]);
+  }, [onSelect, onVisit]);
 
   // Send the page to the preview once it is ready, and on every change after.
   useEffect(() => {

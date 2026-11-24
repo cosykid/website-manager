@@ -1,5 +1,9 @@
-/* The page's components, one row each. What a section holds is indented
-   under it. */
+/* The page's components as a tree, one row each. The rows themselves, the
+   indent and the guide lines are in manager.css, under "Trees". */
+
+.outline {
+  position: relative;
+}
 
 .list {
   margin: 0;
@@ -7,20 +11,10 @@
   list-style: none;
 }
 
-/* --row-fill is the row's background right now. The buttons at the end of the
-   row use it too, so they can cover the text under them. */
+/* Dragging over a row must not select its text. */
 .row {
-  --row-fill: transparent;
-  position: relative;
-  display: flex;
-  align-items: center;
-  border-radius: var(--radius);
-  background: var(--row-fill);
-}
-
-.row:hover,
-.row:focus-within {
-  --row-fill: var(--hover);
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* The focus ring goes round the whole row, buttons included. */
@@ -29,16 +23,76 @@
   outline-offset: -2px;
 }
 
+/* The arrow that folds a component shut. One that holds nothing has an empty
+   space here, so that names at the same depth line up. */
+.fold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  align-self: stretch;
+  width: var(--tree-slot);
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+}
+
+button.fold {
+  cursor: pointer;
+}
+
+button.fold:hover {
+  color: var(--text);
+}
+
+button.fold:focus-visible {
+  outline-offset: -2px;
+}
+
+/* Points down while its contents show, and right once they are folded away. */
+.fold[aria-expanded="true"] svg {
+  transform: rotate(90deg);
+}
+
+/* Holds two icons and shows one: what kind of row it is, or the six dots that
+   mean it can be dragged. */
+.handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  align-self: stretch;
+  width: var(--tree-slot);
+  color: var(--text-muted);
+  cursor: grab;
+  /* A finger on the handle drags the row and does not scroll the list. */
+  touch-action: none;
+}
+
+.handle svg:last-child {
+  display: none;
+  stroke-width: 3;
+}
+
+.row:hover .handle svg:first-child {
+  display: none;
+}
+
+.row:hover .handle svg:last-child {
+  display: block;
+}
+
 .select {
   display: flex;
   flex: 1;
   align-items: baseline;
+  align-self: stretch;
   gap: 0.5rem;
   min-width: 0;
-  min-height: max(2.25rem, var(--control-height));
-  padding: 0.4375rem 0.25rem 0.4375rem 0.625rem;
+  padding: 0.4375rem 0.25rem 0.4375rem 0.375rem;
   border: 0;
-  border-radius: var(--radius);
   background: transparent;
   color: inherit;
   font: inherit;
@@ -50,19 +104,18 @@
   outline: none;
 }
 
-.label {
+/* How many components a folded row is hiding. */
+.count {
   flex: none;
-  font-weight: 550;
-}
-
-/* The note beside the name stays on one line. The form shows it in full. */
-.summary {
-  min-width: 0;
-  overflow: hidden;
+  min-width: 1.25rem;
+  padding: 0 0.375rem;
+  border-radius: 999px;
+  background: var(--selected);
   color: var(--text-muted);
-  font-size: 0.875rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  text-align: center;
 }
 
 /* Move up, move down and remove. They are always there for the keyboard and
@@ -90,9 +143,21 @@
   opacity: 1;
 }
 
-/* A touch screen has no pointer to hover with. There the buttons always
-   show, and take their own space at the end of the row. */
+/* A touch screen has no pointer to hover with. There the handle and the
+   buttons always show, and take their own space in the row. */
 @media (hover: none) {
+  .handle {
+    width: 2rem;
+  }
+
+  .handle svg:first-child {
+    display: none;
+  }
+
+  .handle svg:last-child {
+    display: block;
+  }
+
   .actions {
     position: static;
     flex: none;
@@ -102,30 +167,129 @@
   }
 }
 
-/* What a container holds sits indented under it, joined by a guide line. */
-.children {
-  margin-left: 1rem;
-  padding-left: 0.375rem;
-  border-left: 1px solid var(--border);
-}
-
+/* The last line inside a component: somewhere to put another one. */
 .addInside {
-  display: inline-flex;
-  align-items: center;
   gap: 0.375rem;
-  min-height: max(2rem, var(--control-height));
-  padding: 0 0.625rem;
+  width: 100%;
   border: 0;
-  border-radius: var(--radius);
-  background: transparent;
   color: var(--text-muted);
   font: inherit;
   font-size: 0.875rem;
-  font-weight: 550;
+  text-align: left;
   cursor: pointer;
 }
 
+/* Its icon sits in line with the handles of the rows above it. */
+.addInside svg {
+  flex: none;
+  width: var(--tree-slot);
+  margin-left: var(--tree-slot);
+}
+
 .addInside:hover {
-  background: var(--hover);
   color: var(--text);
+}
+
+.addInside:focus-visible {
+  outline-offset: -2px;
+}
+
+/* ---------- Dragging ---------- */
+
+/* Where a component can be dropped. It takes up no room. */
+.gap {
+  position: relative;
+  height: 0;
+}
+
+/* The line starts as far in as the component will be. */
+.gap[data-target]::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  top: -1px;
+  right: 0;
+  left: calc(var(--tree-edge) + var(--depth) * var(--tree-indent));
+  height: 2px;
+  border-radius: 1px;
+  background: var(--text);
+}
+
+/* A dot on its end, so a short line still catches the eye. */
+.gap[data-target]::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  top: -4px;
+  left: calc(var(--tree-edge) + var(--depth) * var(--tree-indent) - 4px);
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--text);
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+/* The gap inside a folded row is half way down it, and the row itself shows
+   that it is the target. */
+.row > .gap {
+  position: absolute;
+  top: 50%;
+}
+
+.row > .gap::before,
+.row > .gap::after {
+  display: none;
+}
+
+/* The component that would take in what is being dragged. */
+.row[data-receiving] {
+  box-shadow: inset 0 0 0 2px var(--text);
+}
+
+/* What is being dragged stays where it is, faded, until it is let go. */
+.outline [data-dragged] {
+  opacity: 0.4;
+}
+
+.outline[data-dragging] .select,
+.outline[data-dragging] .handle {
+  cursor: grabbing;
+}
+
+.outline[data-dragging] .actions {
+  display: none;
+}
+
+/* Follows the pointer. The page's colours swapped over, like the notice that
+   offers "Undo". */
+.held {
+  position: fixed;
+  z-index: 3;
+  top: 0.625rem;
+  left: 0.875rem;
+  display: flex;
+  gap: 0.5rem;
+  max-width: 18rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: var(--radius);
+  background: var(--text);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.25);
+  color: var(--surface);
+  font-weight: 550;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.heldSummary {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  opacity: 0.8;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fold svg {
+    transition: transform 120ms;
+  }
 }
