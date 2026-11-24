@@ -319,6 +319,9 @@ What the seed does:
 - **It does not add the page to the site's menu.** Add a link to the site's
   `navigation` in `seed/sites.json` and run `npm run seed` again. Sites are
   rewritten on every run.
+- **It has stored pages rendered again.** In production, rendered pages are
+  kept in Redis. A seed puts all of them out of date, so no visitor is shown
+  an old one.
 
 To see the JSON of a page that is in the database, such as one built in the
 manager, run this with the page's own site and path:
@@ -387,7 +390,8 @@ Skipped "club-banner" (banner): Heading is required.
 The seed and the manager both refuse to store such a page. So this only
 happens when a component's definition changes after pages were saved, for
 example when it gains a required prop, or when a page is put into MongoDB
-some other way.
+some other way. (In production, a page changed that way can take up to an
+hour to show. The README's "Pre-rendering" says why.)
 
 ## What page JSON cannot do
 

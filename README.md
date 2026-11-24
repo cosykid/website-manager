@@ -3,20 +3,22 @@
 A small platform for running many websites from one shared component library.
 Editors compose pages in a manager. Each page is saved as a JSON tree of
 components in MongoDB, and the public sites render that JSON on the server.
+In production each page is rendered before anyone visits it and kept in Redis.
 Two demo sites, Ironbarks and Harbour Sevens, use the same components with
 different themes.
 
-Built with Next.js 16 (App Router), TypeScript and the official MongoDB driver.
-No CMS or page-builder library is used: the component definitions, the
-generated forms, the validator and the renderer are all in this repo.
+Built with Next.js 16 (App Router), TypeScript, and the official MongoDB and
+Redis clients. No CMS or page-builder library is used: the component
+definitions, the generated forms, the validator and the renderer are all in
+this repo.
 
 ## Run it
 
-You need Node 22 or newer and Docker.
+You need Node 22.18 or newer and Docker.
 
 ```bash
 npm install
-npm run setup   # starts MongoDB in Docker, then seeds two sites and four pages
+npm run setup   # starts MongoDB and Redis in Docker, then seeds two sites and four pages
 npm run dev
 ```
 
@@ -40,8 +42,8 @@ Other commands:
 | `npm run seed -- --reset` | Deletes every site and page, then seeds again. |
 | `npm test` | Runs the unit tests (Node's built-in test runner). |
 | `npm run typecheck` / `npm run lint` | TypeScript and ESLint. |
-| `npm run build` then `npm start` | Production build. |
-| `npm run db:down` | Stops MongoDB. Data is kept in a Docker volume. |
+| `npm run build` then `npm start` | Production build. This is where pages are pre-rendered: `npm run dev` renders a page each time it is asked for. |
+| `npm run db:down` | Stops MongoDB and Redis. MongoDB's data is kept in a Docker volume. |
 
 ### Environment variables
 
@@ -50,12 +52,13 @@ Nothing needs to be set for the steps above: the defaults match
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `MONGODB_URI` | `mongodb://127.0.0.1:27018` | Where MongoDB is. For Atlas, paste the connection string here and skip `npm run db:up`. |
+| `MONGODB_URI` | `mongodb://127.0.0.1:27018` | Where MongoDB is. For Atlas, paste the connection string here and start only Redis, with `docker compose up -d --wait redis`. |
 | `MONGODB_DB` | `website_manager` | Database name. |
+| `REDIS_URL` | `redis://127.0.0.1:6380` | Where rendered public pages are kept. Without Redis the sites still work, and render each page every time it is asked for. |
 | `MANAGER_HOSTS` | `localhost,127.0.0.1` | Hostnames that show the manager. Any other hostname is treated as a public site. |
 
-MongoDB listens on 27018, not the usual 27017, so it does not clash with a
-MongoDB you may already have running.
+MongoDB listens on 27018 and Redis on 6380, not the usual 27017 and 6379, so
+they do not clash with ones you may already have running.
 
 ### Things to try
 
@@ -75,6 +78,14 @@ MongoDB you may already have running.
 8. Visit a path that does not exist, such as
    http://ironbarks.localhost:3000/nope. It answers with HTTP 404, as does a
    path that exists only on the other site.
+9. See the pre-rendering. Stop the dev server, run `npm run build` then
+   `npm start`, and run the command below. It says `HIT` although nobody has
+   visited the page: the server rendered it when it started. Save that page in
+   the manager and refresh it. The edit is there, and it is still a `HIT`.
+
+   ```bash
+   curl -sI http://ironbarks.localhost:3000/squad | grep x-nextjs-cache
+   ```
 
 ## How it fits together
 
@@ -97,11 +108,13 @@ MongoDB you may already have running.
 | `src/library` | The shared components. Each has a definition (data) and a React component. `primitives/` holds Button, Heading and Image. `validate.ts` checks values against definitions. |
 | `src/site` | The Site and Theme types, theme to CSS variables, and the contrast check. |
 | `src/db` | The MongoDB connection and every query. |
+| `src/cache` | The rendered public pages: the Redis connection, the cache Next.js keeps them in, and the pre-rendering. |
 | `src/renderer` | `RenderTree`, the site header and footer, and the styles shared by all sites. `preview/` is the page the editor shows in its preview frame. |
 | `src/manager` | The manager's screens: page editor, outline, generated forms, preview pane, component picker, server actions. |
 | `src/app/(manager)` | Manager routes. |
 | `src/app/(sites)` | The one public route, and the preview route the editor frames. |
 | `src/proxy.ts` | Sends each hostname to the manager or to a site. |
+| `src/instrumentation.ts` | Runs when a server starts, and has the public pages pre-rendered. |
 | `seed/`, `scripts/seed.ts` | The two demo sites and their pages as JSON, and the script that checks and loads them. |
 | `docs/page-json.md` | A guide to writing page JSON by hand. |
 
@@ -338,6 +351,35 @@ If either is missing the route calls `notFound()` before any of the response
 has been sent, so the visitor gets a real HTTP 404 status and the site's own
 not-found page. A path that exists on one site is a 404 on the other.
 
+## Pre-rendering
+
+In production a public page is rendered before anyone visits it, and that
+copy is kept in Redis until the page changes.
+
+1. **A server starts.** `src/instrumentation.ts` requests every page of every
+   site, as a visitor would. Next.js renders each one and hands it to
+   `src/cache/page-cache.mts`, which puts it in Redis.
+2. **Someone visits.** The page comes from Redis. MongoDB is not read.
+3. **Someone saves a page.** The server action calls `revalidatePath`, and the
+   cache notes in Redis the time that page changed. From then on no server
+   uses a copy rendered before that time. Once the editor has their answer,
+   the server requests the page itself, so the new copy is waiting for the
+   next visitor.
+
+- A copy is dated by when its rendering began. So if a save lands in the
+  middle, the copy is already out of date when it is stored, and is not used.
+- A 404 is never stored. If it were, anyone could fill Redis by asking for
+  addresses that do not exist.
+- Copies belong to one build, because a page's HTML names that build's
+  stylesheets. A new build starts with none.
+- The manager and its preview are never stored. They always read MongoDB.
+- Redis is optional. Without it each page is rendered when it is asked for. If
+  a page is saved while Redis is away, the note of that is sent as soon as
+  Redis is back.
+- `npm run seed` puts every copy out of date. A change made any other way,
+  such as by hand in MongoDB, can take an hour to show: that is the age at
+  which a copy is rendered again, by the next visit to it.
+
 ## Key decisions and trade-offs
 
 **A small field format of my own, not Zod or JSON Schema.** A definition has
@@ -382,12 +424,23 @@ keeps out `javascript:` links.
 would be in production, so public URLs are just the site's own paths.
 Locally this relies on `*.localhost` names.
 
-**Every public request reads MongoDB.** Next.js's Cache Components is off and
-the public route is `force-dynamic`. That gives two things the brief asks
-for: an unknown path returns a real 404 (with Cache Components on, a page
-that finds out at request time that it is missing is streamed with a 200),
-and a saved edit is live on the next refresh. The cost is no caching. With
-real traffic I would cache each page and clear it when the page is saved.
+**Public pages are rendered once and kept in Redis.** Two things had to stay
+true: an unknown path returns a real 404, and a saved edit is live on the next
+refresh. So Next.js's Cache Components is off (with it on, a page that finds
+out at request time that it is missing is streamed with a 200), and each save
+says which page is out of date. Next.js would keep rendered pages on each
+server's own disk. Its `cacheHandler` setting lets `src/cache/page-cache.mts`
+keep them in Redis instead, so that servers share them and one save replaces a
+page for all of them. On a single server Next.js's own store would be enough.
+`next build` does not give the pages it renders to a cache handler, so a
+server renders them as it starts. The costs: one more service to run; Node
+22.18 or newer, because Node loads the cache handler itself without Next.js
+compiling it, and older versions cannot read TypeScript; and servers whose
+clocks agree, because they decide whether a copy is older than a save.
+
+**Redis is allowed to fail.** It only holds copies. A page or a save waits for
+it no longer than 0.3 seconds (one second when a server first looks for it),
+then carries on with MongoDB alone.
 
 **The official MongoDB driver, not Mongoose.** A page is already a JSON tree
 with its own validator. A Mongoose schema would describe the same thing a
@@ -437,9 +490,9 @@ problems are shown with an icon and words, never colour alone.
   and draft/publish. Save page publishes straight away, and the editor says
   so.
 - **Stretch goals partly done:** reordering (move up and move down for
-  components and for list entries, no drag and drop) and tests (39 unit tests
-  on the page tree, validation, page details, preview messages and contrast;
-  none that render components or drive a browser).
+  components and for list entries, no drag and drop) and tests (47 unit tests
+  on the page tree, validation, page details, preview messages, stored pages
+  and contrast; none that render components or drive a browser).
 - Deleting a page, editing a site or its theme in the manager, and uploading
   images. Images are addresses.
 - Each theme has one appearance. A site does not follow the visitor's light
@@ -459,10 +512,10 @@ _To fill in before submitting._
 
 _To review and complete before submitting._
 
-- **Claude Code** (Anthropic's coding agent, model Claude Fable 5.2). It
-  compared approaches with me, then wrote the code, tests, seed content, the
-  page JSON guide in `docs/` and the first draft of this README, and tested
-  the app in a browser. I set the
+- **Claude Code** (Anthropic's coding agent, models Claude Fable 5.2 and, for
+  the pre-rendering, Claude Opus 5.5). It compared approaches with me, then
+  wrote the code, tests, seed content, the page JSON guide in `docs/` and the
+  first draft of this README, and tested the app in a browser. I set the
   direction and made the calls, for example choosing a plain field format
   over Zod so that I could read and explain every line.
 - `AGENTS.md` is written by Next.js 16's dev server for coding agents. It is
