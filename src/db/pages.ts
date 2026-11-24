@@ -21,16 +21,15 @@ function isDuplicateKey(error: unknown): boolean {
 }
 
 export async function listPages(siteId: string): Promise<Page[]> {
-  const records = await pagesCollection()
-    .find({ siteId })
-    .sort({ path: 1 })
-    .toArray();
+  const pages = await pagesCollection();
+  const records = await pages.find({ siteId }).sort({ path: 1 }).toArray();
   return records.map(toPage);
 }
 
 /** How many pages each site has, as { siteId: count }, for the list of sites. */
 export async function countPagesBySite(): Promise<Record<string, number>> {
-  const groups = await pagesCollection()
+  const pages = await pagesCollection();
+  const groups = await pages
     .aggregate<{ _id: string; count: number }>([
       { $group: { _id: "$siteId", count: { $sum: 1 } } },
     ])
@@ -40,7 +39,8 @@ export async function countPagesBySite(): Promise<Record<string, number>> {
 
 export async function getPage(id: string): Promise<Page | null> {
   if (!ObjectId.isValid(id)) return null;
-  const record = await pagesCollection().findOne({ _id: new ObjectId(id) });
+  const pages = await pagesCollection();
+  const record = await pages.findOne({ _id: new ObjectId(id) });
   return record ? toPage(record) : null;
 }
 
@@ -50,7 +50,8 @@ export async function getPage(id: string): Promise<Page | null> {
  */
 export const getPageByPath = cache(
   async (siteId: string, path: string): Promise<Page | null> => {
-    const record = await pagesCollection().findOne({ siteId, path });
+    const pages = await pagesCollection();
+    const record = await pages.findOne({ siteId, path });
     return record ? toPage(record) : null;
   },
 );
@@ -62,8 +63,9 @@ export async function createPage(
   path: string,
 ): Promise<{ id: string } | "path-taken"> {
   const now = new Date();
+  const pages = await pagesCollection();
   try {
-    const result = await pagesCollection().insertOne({
+    const result = await pages.insertOne({
       _id: new ObjectId(),
       schemaVersion: 1,
       siteId,
@@ -86,8 +88,9 @@ export async function savePage(
   changes: { title: string; path: string; content: ComponentInstance[] },
 ): Promise<"saved" | "path-taken" | "not-found"> {
   if (!ObjectId.isValid(id)) return "not-found";
+  const pages = await pagesCollection();
   try {
-    const result = await pagesCollection().updateOne(
+    const result = await pages.updateOne(
       { _id: new ObjectId(id) },
       { $set: { ...changes, updatedAt: new Date() } },
     );

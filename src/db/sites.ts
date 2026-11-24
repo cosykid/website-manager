@@ -7,12 +7,14 @@ function toSite({ _id, ...rest }: SiteRecord): Site {
 }
 
 export async function listSites(): Promise<Site[]> {
-  const records = await sitesCollection().find().sort({ name: 1 }).toArray();
+  const sites = await sitesCollection();
+  const records = await sites.find().sort({ name: 1 }).toArray();
   return records.map(toSite);
 }
 
 export async function getSite(id: string): Promise<Site | null> {
-  const record = await sitesCollection().findOne({ _id: id });
+  const sites = await sitesCollection();
+  const record = await sites.findOne({ _id: id });
   return record ? toSite(record) : null;
 }
 
@@ -25,7 +27,8 @@ export async function getSite(id: string): Promise<Site | null> {
  */
 export const getSiteByDomain = cache(
   async (domain: string): Promise<Site | null> => {
-    const record = await sitesCollection().findOne({ domains: domain });
+    const sites = await sitesCollection();
+    const record = await sites.findOne({ domains: domain });
     return record ? toSite(record) : null;
   },
 );

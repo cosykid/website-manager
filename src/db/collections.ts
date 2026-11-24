@@ -19,12 +19,14 @@ export type PageRecord = PageDocument & {
   updatedAt: Date;
 };
 
-export function sitesCollection(): Collection<SiteRecord> {
-  return getDb().collection<SiteRecord>("sites");
+export async function sitesCollection(): Promise<Collection<SiteRecord>> {
+  const db = await getDb();
+  return db.collection<SiteRecord>("sites");
 }
 
-export function pagesCollection(): Collection<PageRecord> {
-  return getDb().collection<PageRecord>("pages");
+export async function pagesCollection(): Promise<Collection<PageRecord>> {
+  const db = await getDb();
+  return db.collection<PageRecord>("pages");
 }
 
 /**
@@ -33,6 +35,9 @@ export function pagesCollection(): Collection<PageRecord> {
  * indexed read however many sites and pages there are.
  */
 export async function ensureIndexes(): Promise<void> {
-  await sitesCollection().createIndex({ domains: 1 }, { unique: true });
-  await pagesCollection().createIndex({ siteId: 1, path: 1 }, { unique: true });
+  const sites = await sitesCollection();
+  const pages = await pagesCollection();
+
+  await sites.createIndex({ domains: 1 }, { unique: true });
+  await pages.createIndex({ siteId: 1, path: 1 }, { unique: true });
 }

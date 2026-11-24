@@ -72,44 +72,52 @@ async function seed(): Promise<void> {
 
   checkSeedData(sites, pages);
 
-  if (process.argv.includes("--reset")) {
-    await sitesCollection().deleteMany({});
-    await pagesCollection().deleteMany({});
-    console.log("Removed every site and page.");
-  }
+  // Connect once, up front. If MongoDB is not running, the script stops here.
+  const client = await getMongoClient();
+  try {
+    const sitesInDb = await sitesCollection();
+    const pagesInDb = await pagesCollection();
 
-  await ensureIndexes();
+    if (process.argv.includes("--reset")) {
+      await sitesInDb.deleteMany({});
+      await pagesInDb.deleteMany({});
+      console.log("Removed every site and page.");
+    }
 
-  for (const { id, ...site } of sites) {
-    await sitesCollection().replaceOne({ _id: id }, site, { upsert: true });
-  }
+    await ensureIndexes();
 
-  let pagesAdded = 0;
-  const now = new Date();
-  for (const page of pages) {
-    const result = await pagesCollection().updateOne(
-      { siteId: page.siteId, path: page.path },
-      { $setOnInsert: { ...page, createdAt: now, updatedAt: now } },
-      { upsert: true },
+    for (const { id, ...site } of sites) {
+      await sitesInDb.replaceOne({ _id: id }, site, { upsert: true });
+    }
+
+    let pagesAdded = 0;
+    const now = new Date();
+    for (const page of pages) {
+      const result = await pagesInDb.updateOne(
+        { siteId: page.siteId, path: page.path },
+        { $setOnInsert: { ...page, createdAt: now, updatedAt: now } },
+        { upsert: true },
+      );
+      pagesAdded += result.upsertedCount;
+    }
+
+    const pagesKept = pages.length - pagesAdded;
+    console.log(
+      `Seeded ${sites.length} sites. Added ${pagesAdded} pages` +
+        (pagesKept > 0 ? `, left ${pagesKept} existing pages as they were.` : "."),
     );
-    pagesAdded += result.upsertedCount;
-  }
-
-  const pagesKept = pages.length - pagesAdded;
-  console.log(
-    `Seeded ${sites.length} sites. Added ${pagesAdded} pages` +
-      (pagesKept > 0 ? `, left ${pagesKept} existing pages as they were.` : "."),
-  );
-  console.log("\nWith `npm run dev` running, open:");
-  console.log("  Manager         http://localhost:3000");
-  for (const site of sites) {
-    console.log(`  ${site.name.padEnd(15)} http://${site.domains[0]}:3000`);
+    console.log("\nWith `npm run dev` running, open:");
+    console.log("  Manager         http://localhost:3000");
+    for (const site of sites) {
+      console.log(`  ${site.name.padEnd(15)} http://${site.domains[0]}:3000`);
+    }
+  } finally {
+    // Close the connection, or the script would never exit.
+    await client.close();
   }
 }
 
-seed()
-  .catch((error: unknown) => {
-    console.error(error instanceof Error ? error.message : error);
-    process.exitCode = 1;
-  })
-  .finally(() => getMongoClient().close());
+seed().catch((error: unknown) => {
+  console.error(error instanceof Error ? error.message : error);
+  process.exitCode = 1;
+});
