@@ -400,7 +400,7 @@ personality.
   live preview and draft/publish. Save page publishes straight away, and the
   editor says so.
 - **Stretch goals partly done:** reordering (move up and move down for
-  components and for list entries, no drag and drop) and tests (34 unit tests
+  components and for list entries, no drag and drop) and tests (36 unit tests
   on the page tree, validation, page details and contrast; none that render
   components or drive a browser).
 - Deleting a page, editing a site or its theme in the manager, and uploading

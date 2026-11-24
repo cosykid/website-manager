@@ -6,6 +6,7 @@ import type { Field } from "./types";
 import {
   emptyValue,
   fillGroup,
+  fillTree,
   isSafeAddress,
   validateGroup,
   validateTree,
@@ -115,6 +116,36 @@ test("fillGroup fills gaps in saved props and drops props that no longer exist",
     title: "Team",
     cards: [{ heading: "Mia", image: { url: "/a.svg", alt: "" } }],
   });
+});
+
+test("a page that leaves optional props out is valid once it is filled", () => {
+  const handWritten: ComponentInstance[] = [
+    {
+      id: "wrapper",
+      type: "section",
+      props: {},
+      children: [
+        { id: "intro", type: "banner", props: { heading: "Welcome" } },
+        {
+          id: "grid",
+          type: "card-grid",
+          props: { title: "Team", cards: [{ heading: "Mia", image: { url: "/a.svg" } }] },
+        },
+      ],
+    },
+  ];
+
+  const filled = fillTree(handWritten, definitions);
+
+  assert.deepEqual(validateTree(filled, definitions), {});
+  assert.deepEqual(filled[0].props, { layout: "full", background: "none" });
+  assert.deepEqual(filled[0].children?.[0].props, { heading: "Welcome", message: "" });
+});
+
+test("filling does not hide a missing required prop", () => {
+  const page: ComponentInstance[] = [{ id: "intro", type: "banner", props: {} }];
+  const issues = validateTree(fillTree(page, definitions), definitions);
+  assert.equal(issues["intro"][0].message, "Heading is required.");
 });
 
 test("validateTree reports problems by instance, including nested ones", () => {

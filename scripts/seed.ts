@@ -17,7 +17,7 @@ import {
   sitesCollection,
 } from "@/db/collections";
 import { definitions } from "@/library/definitions";
-import { validateTree } from "@/library/validate";
+import { fillTree, validateTree } from "@/library/validate";
 import { isInstanceTree, isValidPath } from "@/page-model/shape";
 import type { PageDocument } from "@/page-model/types";
 import { findContrastProblems } from "@/site/contrast";
@@ -26,7 +26,14 @@ import type { Site } from "@/site/types";
 const seedFolder = path.join(process.cwd(), "seed");
 
 function readJson<T>(file: string): T {
-  return JSON.parse(readFileSync(file, "utf8")) as T;
+  try {
+    return JSON.parse(readFileSync(file, "utf8")) as T;
+  } catch (error) {
+    // Say which file, so a missing comma in a hand-written page is easy to find.
+    const name = path.relative(process.cwd(), file);
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new Error(`${name} is not valid JSON: ${reason}`);
+  }
 }
 
 /** Stops the seed with a clear message if the seed files have a mistake. */
@@ -44,14 +51,22 @@ function checkSeedData(sites: Site[], pages: PageDocument[]): void {
     const name = `Page ${page.siteId}${page.path}`;
     if (!siteIds.has(page.siteId)) problems.push(`${name}: unknown site`);
     if (!isValidPath(page.path)) problems.push(`${name}: invalid path`);
+    if (typeof page.title !== "string" || page.title.trim() === "") {
+      problems.push(`${name}: title is missing`);
+    }
     if (!isInstanceTree(page.content)) {
       problems.push(`${name}: content is not a valid tree of components`);
       continue;
     }
-    const issues = validateTree(page.content, definitions);
+    // A hand-written page may leave optional props out. Fill them in before
+    // checking, which is the order the renderer uses.
+    const filled = fillTree(page.content, definitions);
+    const issues = validateTree(filled, definitions);
     for (const [instanceId, instanceIssues] of Object.entries(issues)) {
       for (const issue of instanceIssues) {
-        problems.push(`${name}, "${instanceId}" ${issue.path}: ${issue.message}`);
+        // A problem with the component as a whole has no prop to name.
+        const prop = issue.path === "" ? "" : ` ${issue.path}`;
+        problems.push(`${name}, "${instanceId}"${prop}: ${issue.message}`);
       }
     }
   }
@@ -93,9 +108,11 @@ async function seed(): Promise<void> {
     let pagesAdded = 0;
     const now = new Date();
     for (const page of pages) {
+      // Store the page with every prop present, as the manager does on save.
+      const content = fillTree(page.content, definitions);
       const result = await pagesInDb.updateOne(
         { siteId: page.siteId, path: page.path },
-        { $setOnInsert: { ...page, createdAt: now, updatedAt: now } },
+        { $setOnInsert: { ...page, content, createdAt: now, updatedAt: now } },
         { upsert: true },
       );
       pagesAdded += result.upsertedCount;

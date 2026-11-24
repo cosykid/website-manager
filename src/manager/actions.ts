@@ -77,17 +77,16 @@ export async function savePageAction(input: {
     };
   }
 
-  const issues = validateTree(input.content, definitions);
+  // Fill in any prop that was left out, then check the result. The renderer
+  // and the seed script work in the same order. What is stored is only what
+  // the definitions describe, with every prop present.
+  const content = fillTree(input.content, definitions);
+  const issues = validateTree(content, definitions);
   if (Object.keys(issues).length > 0) {
     return { ok: false, message: "Fix the problems below, then save again.", issues };
   }
 
-  const result = await savePage(String(input.pageId), {
-    title,
-    path,
-    // Store only what the definitions describe, with every prop present.
-    content: fillTree(input.content, definitions),
-  });
+  const result = await savePage(String(input.pageId), { title, path, content });
 
   if (result === "path-taken") {
     return {
