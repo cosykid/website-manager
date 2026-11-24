@@ -82,19 +82,24 @@ export async function createPage(
   }
 }
 
-/** Saves a page as a whole, so a page is never left half updated. */
+/**
+ * Saves a page as a whole, so a page is never left half updated. Answers with
+ * its site and the path it had before.
+ */
 export async function savePage(
   id: string,
   changes: { title: string; path: string; content: ComponentInstance[] },
-): Promise<"saved" | "path-taken" | "not-found"> {
+): Promise<{ siteId: string; previousPath: string } | "path-taken" | "not-found"> {
   if (!ObjectId.isValid(id)) return "not-found";
   const pages = await pagesCollection();
   try {
-    const result = await pages.updateOne(
+    const before = await pages.findOneAndUpdate(
       { _id: new ObjectId(id) },
       { $set: { ...changes, updatedAt: new Date() } },
+      { returnDocument: "before" },
     );
-    return result.matchedCount === 1 ? "saved" : "not-found";
+    if (!before) return "not-found";
+    return { siteId: before.siteId, previousPath: before.path };
   } catch (error) {
     if (isDuplicateKey(error)) return "path-taken";
     throw error;

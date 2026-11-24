@@ -1,11 +1,16 @@
+import path from "node:path";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // Cache Components stays off on purpose. With it on, a page that only finds
-  // out at request time that it does not exist is streamed with a 200 status.
-  // Public pages here must answer unknown paths with a real 404 and must show
-  // an editor's latest save on the next refresh, so they render per request.
+  // out at request time that it does not exist is streamed with a 200 status,
+  // and public pages here must answer unknown paths with a real 404.
   cacheComponents: false,
+
+  // Keep rendered pages in Redis, not on this server's disk or in its memory,
+  // so that every server shares them and a save replaces them for all.
+  cacheHandler: path.resolve("src/cache/page-cache.mts"),
+  cacheMaxMemorySize: 0,
 
   // Hides the round Next.js badge shown in a corner during development. The
   // editor's preview is a second page in a frame, so the badge would also

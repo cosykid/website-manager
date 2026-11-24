@@ -1,8 +1,9 @@
-# MongoDB for local development.
+# MongoDB and Redis for local development.
 #
-# It is published on host port 27018, not MongoDB's usual 27017, so it can
-# never collide with (or be mistaken for) a MongoDB already running on your
-# machine. It only listens on localhost because it has no password.
+# They are published on host ports 27018 and 6380, not the usual 27017 and
+# 6379, so they can never collide with (or be mistaken for) a MongoDB or Redis
+# already running on your machine. They only listen on localhost because they
+# have no passwords.
 name: website-manager
 
 services:
@@ -14,6 +15,21 @@ services:
       - mongo-data:/data/db
     healthcheck:
       test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  # Rendered public pages. They can all be made again from MongoDB, so nothing
+  # is kept on disk. When memory is full, Redis drops the pages visited least
+  # recently. "volatile" means only keys with an expiry time are dropped, which
+  # leaves out the note of when each page last changed.
+  redis:
+    image: redis:8-alpine
+    command: redis-server --save "" --appendonly no --maxmemory 100mb --maxmemory-policy volatile-lru
+    ports:
+      - "127.0.0.1:6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 12

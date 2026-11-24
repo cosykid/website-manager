@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { createPage, savePage } from "@/db/pages";
 import { getSite } from "@/db/sites";
 import { definitions } from "@/library/definitions";
@@ -14,12 +15,19 @@ import {
   type PageDetailErrors,
 } from "@/page-model/details";
 import { isInstanceTree } from "@/page-model/shape";
+import { publicRoute } from "@/site/public-route";
+import type { Site } from "@/site/types";
 
 /**
  * What the manager can change. These run on the server and can be called by
  * any browser, so each one checks everything it is given and trusts nothing.
  * (The brief asks for no sign-in. With one, the check would start here.)
  */
+
+/** Puts the stored copy of a public page out of date, now that the page has changed. */
+function refreshPublicPage(site: Site, path: string): void {
+  for (const domain of site.domains) revalidatePath(publicRoute(domain, path));
+}
 
 export type CreatePageResult =
   | { ok: true; pageId: string }
@@ -43,6 +51,8 @@ export async function createPageAction(input: {
   if (result === "path-taken") {
     return { ok: false, errors: { path: PATH_TAKEN_MESSAGE } };
   }
+
+  refreshPublicPage(site, path);
   return { ok: true, pageId: result.id };
 }
 
@@ -97,6 +107,13 @@ export async function savePageAction(input: {
   }
   if (result === "not-found") {
     return { ok: false, message: "This page no longer exists. It may have been deleted." };
+  }
+
+  const site = await getSite(result.siteId);
+  if (site) {
+    refreshPublicPage(site, path);
+    // The old address has to stop working when a page moves.
+    if (result.previousPath !== path) refreshPublicPage(site, result.previousPath);
   }
   return { ok: true };
 }

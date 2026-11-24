@@ -7,8 +7,11 @@ import { RenderTree } from "@/renderer/RenderTree";
 
 type Props = PageProps<"/s/[domain]/[[...path]]">;
 
-// Render on every request, so an editor's save shows on the next refresh.
-export const dynamic = "force-dynamic";
+// Pages are rendered once and stored (see src/cache), not on every request. A
+// save in the manager puts its page out of date. The hour is for a change made
+// some other way, such as by hand in MongoDB.
+export const dynamic = "force-static";
+export const revalidate = 3600;
 
 /** A public page is found by two things: the site's hostname and the path. */
 async function findPage(params: Props["params"]) {

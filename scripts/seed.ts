@@ -10,6 +10,8 @@
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { recordChangeToEveryPage } from "@/cache/page-cache.mts";
+import { getRedis } from "@/cache/redis.mts";
 import { getMongoClient } from "@/db/client";
 import {
   ensureIndexes,
@@ -123,6 +125,11 @@ async function seed(): Promise<void> {
       `Seeded ${sites.length} sites. Added ${pagesAdded} pages` +
         (pagesKept > 0 ? `, left ${pagesKept} existing pages as they were.` : "."),
     );
+    // Any of them may have changed, so the copies in Redis are out of date.
+    const redis = await getRedis();
+    if (redis.isReady) await recordChangeToEveryPage();
+    redis.destroy();
+
     console.log("\nWith `npm run dev` running, open:");
     console.log("  Manager         http://localhost:3000");
     for (const site of sites) {

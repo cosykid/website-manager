@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { publicRoute } from "@/site/public-route";
 
 /**
  * Decides from the hostname alone whether a request is for the manager or for
@@ -28,8 +29,14 @@ export function proxy(request: NextRequest) {
   }
 
   const url = request.nextUrl.clone();
-  url.pathname = `/s/${hostname}${url.pathname === "/" ? "" : url.pathname}`;
-  return NextResponse.rewrite(url);
+  url.pathname = publicRoute(hostname, url.pathname);
+
+  // A browser or CDN may keep a page, but must check that it is still current
+  // each time it is wanted. The header Next.js would send allows an old copy to
+  // be shown while a new one is fetched, and a save has to be live at once.
+  return NextResponse.rewrite(url, {
+    headers: { "Cache-Control": "public, max-age=0, must-revalidate" },
+  });
 }
 
 export const config = {
