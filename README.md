@@ -62,26 +62,34 @@ they do not clash with ones you may already have running.
 
 ### Things to try
 
-1. In the manager, open **Ironbarks**, then **Home**. The right side is a
-   live preview: the page as visitors will see it.
-2. Click the big heading in the preview. Its form opens on the left. Change
-   the heading and the preview follows as you type. Nothing is public until
-   **Save page**; **View page** opens the live page in a new tab.
-3. Choose **Back**, open the card grid from the list, and add a card.
-4. Choose **Add inside Section** to nest a component, or **Add component** to
-   add one at the top level. Point at a row to see its move and remove
-   buttons. Remove one, then choose **Undo**.
-5. Switch the preview to **Phone** to see the page at a phone's width.
-6. Save with a required field empty to see where problems are reported.
-7. Create a page on Harbour Sevens. The same components appear in that
-   site's colours, type and corner shapes.
-8. Carry a page from one site to the other. Open Ironbarks' **Squad**, choose
-   **JSON**, then **Export**. On Harbour Sevens, choose that file under
-   **Import a page**. The page is there, in the other site's theme.
-9. Visit a path that does not exist, such as
-   http://ironbarks.localhost:3000/nope. It answers with HTTP 404, as does a
-   path that exists only on the other site.
-10. See the pre-rendering. Stop the dev server, run `npm run build` then
+1. In the manager, open **Ironbarks**, then **Home**. On the left are the
+   site's pages and, under them, everything on this page as a tree. Beside
+   them is a live preview: the page as visitors will see it.
+2. Click the big heading in the preview. Its form opens. Change the heading
+   and the preview follows as you type. Nothing is public until **Save page**;
+   **View page** opens the live page in a new tab.
+3. Choose the card grid in the tree, and add a card.
+4. Drag a row of the tree above or below another, into a Section or out of
+   one. A line shows where it will go, and Esc calls it off. On a touch screen,
+   drag it by its six dots. Then choose **Undo**. The arrows and **Placed in**
+   on a component's form make the same moves without dragging.
+5. Choose **Add inside Section** to nest a component, or **Add component** to
+   add one at the top level.
+6. Change something, then open another page from the list, or by clicking the
+   site's own menu in the preview. The first page is marked **Unsaved** and
+   keeps its changes until you come back to it.
+7. Switch the preview to **Phone** to see the page at a phone's width.
+8. Save with a required field empty to see where problems are reported.
+9. Create a page on Harbour Sevens. The same components appear in that
+   site's colours, type and corner shapes. Give it a path under another
+   page's, such as `/teams/juniors`, and it is listed under that page.
+10. Carry a page from one site to the other. Open Ironbarks' **Squad**, choose
+    **JSON**, then **Export**. On Harbour Sevens, choose that file under
+    **Import a page**. The page is there, in the other site's theme.
+11. Visit a path that does not exist, such as
+    http://ironbarks.localhost:3000/nope. It answers with HTTP 404, as does a
+    path that exists only on the other site.
+12. See the pre-rendering. Stop the dev server, run `npm run build` then
     `npm start`, and run the command below. It says `HIT` although nobody has
     visited the page: the server rendered it when it started. Save that page in
     the manager and refresh it. The edit is there, and it is still a `HIT`.
@@ -107,13 +115,13 @@ they do not clash with ones you may already have running.
 
 | Folder | What is in it |
 | --- | --- |
-| `src/page-model` | The page JSON: its types, pure functions that edit the tree, shape checks, and reading and writing a page as a file. Also the two messages the editor and its preview exchange. No React, no database. |
+| `src/page-model` | The page JSON: its types, pure functions that edit the tree, shape checks, and reading and writing a page as a file. Also how a site's pages nest, and the messages the editor and its preview exchange. No React, no database. |
 | `src/library` | The shared components. Each has a definition (data) and a React component. `primitives/` holds Button, Heading and Image. `validate.ts` checks values against definitions. |
 | `src/site` | The Site and Theme types, theme to CSS variables, and the contrast check. |
 | `src/db` | The MongoDB connection and every query. |
 | `src/cache` | The rendered public pages: the Redis connection, the cache Next.js keeps them in, and the pre-rendering. |
 | `src/renderer` | `RenderTree`, the site header and footer, and the styles shared by all sites. `preview/` is the page the editor shows in its preview frame. |
-| `src/manager` | The manager's screens: page editor, outline, generated forms, preview pane, component picker, JSON import and export, server actions. |
+| `src/manager` | The manager's screens: page editor, page list, outline, dragging, generated forms, preview pane, component picker, JSON import and export, server actions. |
 | `src/app/(manager)` | Manager routes. |
 | `src/app/(sites)` | The one public route, and the preview route the editor frames. |
 | `src/proxy.ts` | Sends each hostname to the manager or to a site. |
@@ -129,8 +137,8 @@ is what "renderable without the manager" means here: the manager's code could
 be deleted, or deployed separately, and stored pages would still render.
 
 The editor's live preview keeps to the rule. It is a page in the renderer's
-half, shown in a frame. The manager knows its address and two kinds of
-message, and still imports no component.
+half, shown in a frame. The manager knows its address and the messages they
+exchange, and still imports no component.
 
 ## The page JSON format
 
@@ -414,13 +422,39 @@ changes.
 `/preview/<page id>`, a route in the renderer's half that draws the page in
 the site's own document, with its theme and components. On every edit the
 editor sends the unsaved tree with `postMessage`, and the preview answers
-with the id of a component that was clicked. A frame keeps the site's CSS out
-of the manager, and gives the page a width of its own to respond to, which is
+with the id of a component that was clicked, or the path of a menu link. A
+frame keeps the site's CSS out of the manager, and gives the page a width of
+its own to respond to, which is
 how the Phone size works. A draft is never written to the database, so it
 cannot reach the public site. `PreviewTree` wraps each instance to carry its
 id, and shares `resolveInstance` with `RenderTree`, so both decide in the
 same way what can be drawn. The cost is a second document to load, and a
 second walk of the tree to keep in step with the first.
+
+**Dragging is pointer events, not a library.** Every place a component can go
+is an element in the list, with no height and a name made of two ids: the
+parent's and the next neighbour's. While a row is dragged, `useDragToMove`
+picks the one nearest the pointer, and letting go calls `moveInstanceTo` in
+`src/page-model/tree.ts`. A place names a neighbour, not a position number, so
+nothing has to be renumbered when the component is first taken out of where it
+was. The hook knows nothing about components, so the cards in a form use it
+too. With pointer events a mouse, a finger and a pen all work the same way, and
+a drag carries on over the preview's frame, where HTML's own drag and drop
+would not. The cost is that there is no dragging with the keyboard. The arrows
+and **Placed in** on a component's form make the same moves there.
+
+**Unsaved changes are kept for each page, in the browser.** Moving between
+pages should be one click with no question, and should never lose work. So
+drafts are held in a React context in the manager's root layout
+(`src/manager/Drafts.tsx`), which stays in place while pages come and go. They
+survive the Back button and every link in the manager. They do not survive
+closing or reloading the tab, so the browser asks first. Nothing about them
+reaches the server, so there is nothing to clean up.
+
+**Pages nest by their paths.** `/squad/juniors` is listed under `/squad`. It
+is worked out each time from the paths (`src/page-model/page-tree.ts`) and not
+stored, so it can never disagree with the addresses. The cost is that pages
+cannot be put in an order of their own.
 
 **A file is treated like any other edit.** Export writes the editor's own
 copy of the page to a file, in the browser. Import into an open page is read
@@ -485,16 +519,18 @@ dark Ironbarks theme that background is not light, so the label editors see
 describes what it does instead.
 
 **Undo instead of "Are you sure?".** Removing a component, a card or a link
-offers Undo until the next change, and so does replacing a page's components
-from a file. Nothing in the manager is irreversible until Save page, and the
-editor warns before leaving with unsaved changes.
+offers Undo until the next change. So does moving a component, and so does
+replacing a page's components from a file. Nothing in the manager is
+irreversible until Save page.
 
 **Design.** The manager is black and white in system type and follows the
 reader's light or dark setting. It has no colour of its own: the only colour
 on screen is each site's, shown as a small mark beside its name, so the two
-sites carry the personality. Sites and pages are plain lists, and the editor
-has two sides: on the left a list of what the page holds, which opens one
-form at a time, and on the right the live preview. Controls are at least
+sites carry the personality. Pages and components are drawn as the same kind
+of tree, one step in for each level with a line down the side, so that what is
+inside what can be seen at a glance. A wide window shows the trees, the preview
+and one form side by side. A narrower one shows the form in the trees' place,
+and a phone shows the trees, the form or the preview. Controls are at least
 44px tall on touch screens, every text pairing measures 5.4:1 or better, and
 problems are shown with an icon and words, never colour alone.
 
@@ -502,18 +538,21 @@ problems are shown with an icon and words, never colour alone.
 
 - **Sign-in.** The brief says none is needed. Anyone who can reach the
   manager can edit. The server actions are where a check would go.
-- **Stretch goal done:** live preview. The editor shows the page as it is
-  edited, at desktop and phone widths, and a click on the preview opens that
-  component's form.
+- **Stretch goals done:** live preview, and reordering. The editor shows the
+  page as it is edited, at desktop and phone widths, and a click on the preview
+  opens that component's form. Components are reordered, and moved in and out
+  of Sections, by dragging them in the tree or with buttons.
 - **Stretch goals not done:** deploying to Vercel, a data-driven component
   and draft/publish. Save page publishes straight away, and the editor says
   so.
-- **Stretch goals partly done:** reordering (move up and move down for
-  components and for list entries, no drag and drop) and tests (55 unit tests
-  on the page tree, validation, page details, page files, preview messages,
-  stored pages and contrast; none that render components or drive a browser).
+- **Stretch goal partly done:** tests. There are 68 unit tests on the page
+  tree, the tree of pages, validation, page details, page files, preview
+  messages, stored pages and contrast. None render components or drive a
+  browser.
 - Deleting a page, editing a site or its theme in the manager, and uploading
   images. Images are addresses.
+- Dragging in the preview itself, and dragging a component to another page. A
+  component moves within its page, in the tree.
 - Each theme has one appearance. A site does not follow the visitor's light
   or dark setting.
 - After a removal, keyboard focus is not moved to a sensible neighbour.
@@ -532,10 +571,10 @@ _To fill in before submitting._
 _To review and complete before submitting._
 
 - **Claude Code** (Anthropic's coding agent, models Claude Fable 5.2 and, for
-  the pre-rendering, Claude Opus 5.5). It compared approaches with me, then
-  wrote the code, tests, seed content, the page JSON guide in `docs/` and the
-  first draft of this README, and tested the app in a browser. I set the
-  direction and made the calls, for example choosing a plain field format
-  over Zod so that I could read and explain every line.
+  the pre-rendering and the dragging, Claude Opus 5.5). It compared approaches
+  with me, then wrote the code, tests, seed content, the page JSON guide in
+  `docs/` and the first draft of this README, and tested the app in a browser.
+  I set the direction and made the calls, for example choosing a plain field
+  format over Zod so that I could read and explain every line.
 - `AGENTS.md` is written by Next.js 16's dev server for coding agents. It is
   not part of the app.

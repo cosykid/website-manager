@@ -41,23 +41,21 @@ export default async function SitesPage() {
                       <span className="visually-hidden">: manage pages</span>
                     </Link>
                   </h2>
-                  <p className="muted">{site.domains[0]}</p>
+                  <a
+                    className="row-address"
+                    href={origins[index]}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {origins[index]}
+                    <span className="visually-hidden"> in a new tab</span>
+                    <Icon name="open" size={14} />
+                  </a>
                 </div>
 
                 <p className="row-meta">
                   {count} {count === 1 ? "page" : "pages"}
                 </p>
-
-                <a
-                  className="row-action"
-                  href={origins[index]}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  View site
-                  <span className="visually-hidden"> {site.name} in a new tab</span>
-                  <Icon name="open" size={14} />
-                </a>
 
                 <span className="row-chevron">
                   <Icon name="next" />

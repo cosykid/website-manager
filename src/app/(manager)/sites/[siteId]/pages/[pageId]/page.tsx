@@ -26,6 +26,11 @@ export default async function EditPagePage({ params }: Props) {
   const [site, page] = await Promise.all([getSite(siteId), getPage(pageId)]);
   if (!site || !page || page.siteId !== site.id) notFound();
 
+  const [siteOrigin, pages] = await Promise.all([
+    getSiteOrigin(site),
+    listPageLinks(site.id),
+  ]);
+
   return (
     <PageEditor
       // A fresh editor for each page, so nothing carries over from the last.
@@ -39,8 +44,8 @@ export default async function EditPagePage({ params }: Props) {
           surface: site.theme.colors.surface,
         },
       }}
-      siteOrigin={await getSiteOrigin(site)}
-      pages={await listPageLinks(site.id)}
+      siteOrigin={siteOrigin}
+      pages={pages}
       page={{
         id: page.id,
         title: page.title,

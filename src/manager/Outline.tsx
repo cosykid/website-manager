@@ -39,7 +39,7 @@ type OutlineProps = {
   onFold: (id: string, shut: boolean) => void;
   onSelect: (id: string) => void;
   /** Moves a component to another place on the page. */
-  onMoveTo: (id: string, place: Place) => void;
+  onMove: (id: string, place: Place) => void;
   onRemove: (id: string) => void;
   /** Opens the component picker, to add inside the instance with this id. */
   onAddInside: (parentId: string) => void;
@@ -56,7 +56,7 @@ export function rowId(instanceId: string): string {
 export function Outline(props: OutlineProps) {
   const { content, definitions } = props;
   const { list, drag, startDrag } = useDragToMove((id, gap) =>
-    props.onMoveTo(id, toPlace(gap)),
+    props.onMove(id, toPlace(gap)),
   );
 
   const dragged = drag ? findInstance(content, drag.id) : undefined;

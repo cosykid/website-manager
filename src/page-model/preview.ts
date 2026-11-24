@@ -23,7 +23,7 @@ export type PreviewMessage =
   | { type: "ready" }
   // A component was clicked in the preview.
   | { type: "select"; id: string }
-  // A link outside every component was clicked, such as one in the site's menu.
+  // A link in the site's own menu was clicked.
   | { type: "visit"; path: string };
 
 export function isDraftMessage(value: unknown): value is DraftMessage {

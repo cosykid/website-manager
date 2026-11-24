@@ -44,6 +44,13 @@ export function useDragToMove(onDrop: (id: string, gap: string) => void) {
   const list = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
 
+  // The page can be edited during a drag, from the keyboard. So a drop uses
+  // the newest onDrop, not the one from when the drag began.
+  const newestOnDrop = useRef(onDrop);
+  useEffect(() => {
+    newestOnDrop.current = onDrop;
+  }, [onDrop]);
+
   // Stops listening to the pointer if the list goes away during a drag.
   const listening = useRef<AbortController>(null);
   useEffect(() => () => listening.current?.abort(), []);
@@ -111,7 +118,7 @@ export function useDragToMove(onDrop: (id: string, gap: string) => void) {
       ignoreNextClick();
       setDrag(null);
       const dropped = event.type === "pointerup" && stage === "dragging";
-      if (dropped && gap !== null) onDrop(id, gap);
+      if (dropped && gap !== null) newestOnDrop.current(id, gap);
     }
 
     window.addEventListener("pointermove", move, { signal });

@@ -31,6 +31,7 @@ import { GroupFields } from "./FieldEditor";
 import { Icon } from "./Icon";
 import { labelOf } from "./instance-names";
 import { Outline, rowId } from "./Outline";
+import { PageDetailsForm } from "./PageDetailsForm";
 import styles from "./PageEditor.module.css";
 import { PageJsonDialog } from "./PageJsonDialog";
 import { PageList } from "./PageList";
@@ -233,7 +234,7 @@ export function PageEditor({
     setPicker(null);
   }
 
-  function moveComponentTo(id: string, place: Place) {
+  function moveComponent(id: string, place: Place) {
     const instance = findInstance(content, id);
     const after = moveInstanceTo(content, id, place);
     // Dropped back where it was.
@@ -481,7 +482,7 @@ export function PageEditor({
                 folded={folded}
                 onFold={foldRow}
                 onSelect={(id) => openForm({ kind: "component", id })}
-                onMoveTo={moveComponentTo}
+                onMove={moveComponent}
                 onRemove={removeComponent}
                 onAddInside={(parentId) => setPicker({ parentId })}
               />
@@ -520,52 +521,14 @@ export function PageEditor({
                   </p>
                 </div>
 
-                <div className="field">
-                  <label className="label" htmlFor="page-title">
-                    Title
-                  </label>
-                  <input
-                    id="page-title"
-                    className="input"
-                    value={title}
-                    aria-invalid={detailErrors.title ? true : undefined}
-                    aria-describedby={detailErrors.title ? "page-title-error" : undefined}
-                    onChange={(event) => change({ title: event.target.value })}
-                  />
-                  {detailErrors.title && (
-                    <p className="error" id="page-title-error">
-                      <Icon name="problem" />
-                      {detailErrors.title}
-                    </p>
-                  )}
-                </div>
-
-                <div className="field">
-                  <label className="label" htmlFor="page-path">
-                    Path
-                  </label>
-                  <input
-                    id="page-path"
-                    className="input"
-                    value={path}
-                    autoCapitalize="none"
-                    spellCheck={false}
-                    aria-invalid={pathError ? true : undefined}
-                    aria-describedby={pathError ? "page-path-error" : "page-path-help"}
-                    onChange={(event) => change({ path: event.target.value })}
-                  />
-                  {pathError ? (
-                    <p className="error" id="page-path-error">
-                      <Icon name="problem" />
-                      {pathError}
-                    </p>
-                  ) : (
-                    <p className="help" id="page-path-help">
-                      The address of the page on {site.name}. The home page is
-                      &quot;/&quot;.
-                    </p>
-                  )}
-                </div>
+                <PageDetailsForm
+                  siteName={site.name}
+                  title={title}
+                  path={path}
+                  titleError={detailErrors.title}
+                  pathError={pathError}
+                  onChange={change}
+                />
 
                 {open.kind === "list" && content.length > 0 && (
                   <p className={`muted ${styles.hint}`}>
@@ -659,7 +622,7 @@ export function PageEditor({
                   content={content}
                   definitions={definitions}
                   onMove={(parentId) =>
-                    moveComponentTo(selected.id, { parentId, beforeId: null })
+                    moveComponent(selected.id, { parentId, beforeId: null })
                   }
                 />
               </>

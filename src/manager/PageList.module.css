@@ -16,14 +16,20 @@
 }
 
 /* A site with many pages scrolls here, so that the page's components below are
-   never pushed out of reach. The half row says that there are more. A
-   scrollbar, where there is one, goes in the space beside the rows. */
+   never pushed out of reach. The half row says that there are more. */
 .list {
   max-height: calc(5.5 * var(--tree-row-height));
-  margin-right: -0.5rem;
-  padding-right: 0.5rem;
   overflow-y: auto;
   scrollbar-width: thin;
+}
+
+/* Where the panel has the space, a scrollbar goes beside the rows. A phone's
+   panel does not, and the list would be wider than the screen. */
+@media (min-width: 50rem) {
+  .list {
+    margin-right: -0.5rem;
+    padding-right: 0.5rem;
+  }
 }
 
 /* Where the editor fills the window exactly (see PageEditor.module.css), the

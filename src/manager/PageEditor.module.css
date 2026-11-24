@@ -107,10 +107,18 @@
   padding: 0.875rem calc(var(--gutter) - 0.625rem) 5.5rem;
 }
 
-/* Keeps a list of pages apart from the page that is open. */
+/* A line keeps the list of pages apart from the page that is open. */
+.listPanel {
+  gap: 0;
+}
+
+.listPanel > nav {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
 .listPanel > section {
   padding-top: 1rem;
-  border-top: 1px solid var(--border);
 }
 
 /* The page itself, as the top of the tree of what is on it. */

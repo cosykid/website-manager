@@ -724,25 +724,52 @@ textarea.input {
   white-space: nowrap;
 }
 
-/* A second link in the row, such as "View site". It sits above the main
-   link's ::after so it can be clicked on its own. */
-.row-action {
+/* A second link in the row: "View page", or a site's address under its name.
+   It sits above the main link's ::after so it can be clicked on its own. */
+.row-action,
+.row-address {
   position: relative;
   z-index: 1;
+  color: var(--text-muted);
+}
+
+.row-action {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
   min-height: var(--control-height);
-  color: var(--text-muted);
   font-size: 0.875rem;
   font-weight: 550;
   text-decoration: none;
   white-space: nowrap;
 }
 
+/* Only as wide as its text, so the rest of the line is still the main link. */
+.row-address {
+  justify-self: start;
+  min-height: 1.5rem;
+}
+
+/* The arrow follows the last word, also when a long address wraps. */
+.row-address svg {
+  margin-left: 0.375rem;
+  vertical-align: -0.125em;
+}
+
 .row-action:hover {
   color: var(--text);
   text-decoration: underline;
+}
+
+.row-address:hover {
+  color: var(--text);
+}
+
+/* A text link is a small target for a finger, so it gets a taller one. */
+@media (pointer: coarse) {
+  .row-address {
+    padding-block: 0.625rem;
+  }
 }
 
 /* Says the row leads somewhere. */

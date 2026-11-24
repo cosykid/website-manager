@@ -2,7 +2,6 @@
    indent and the guide lines are in manager.css, under "Trees". */
 
 .outline {
-  position: relative;
   --handle-width: var(--tree-slot);
 }
 
